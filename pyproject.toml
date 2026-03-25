@@ -22,10 +22,11 @@ classifiers = [
   "Topic :: Scientific/Engineering :: Artificial Intelligence"
 ]
 
-[project.optional-dependencies]
+[dependency-groups]
 dev = [
   "build>=1.2.2",
-  "pytest>=8.3.0"
+  "pytest>=8.3.0",
+  "pytest-cov>=7.1.0"
 ]
 
 [project.scripts]
@@ -79,3 +80,5 @@ show_error_codes = true
 [[tool.mypy.overrides]]
 module = ["pytest"]
 ignore_missing_imports = true
+
+
