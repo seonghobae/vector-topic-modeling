@@ -1,0 +1,31 @@
+name: Bug report
+description: Report a reproducible bug in the package or repository workflow.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: Thanks for helping improve `vector-topic-modeling`.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: What broke?
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Reproduction steps
+      description: Include commands, sample input, and expected vs actual behavior.
+    validations:
+      required: true
+  - type: input
+    id: python-version
+    attributes:
+      label: Python version
+      placeholder: "3.11.9"
+  - type: input
+    id: install-method
+    attributes:
+      label: Installation method
+      placeholder: "uv sync / pip install / wheel install"

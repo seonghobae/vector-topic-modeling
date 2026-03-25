@@ -1,0 +1,13 @@
+.venv/
+.venv-smoke-cli/
+.venv-health*/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+__pycache__/
+*.py[cod]
+dist/
+build/
+*.egg-info/
+registered_agents.json
+task_agent_mapping.json

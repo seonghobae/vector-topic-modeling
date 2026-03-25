@@ -1,0 +1,3 @@
+{"id":"1","text":"refund duplicate billing","session_id":"s1","question":"I was charged twice","response":"Let's review your billing history.","count":1}
+{"id":"2","text":"cancel subscription refund","session_id":"s1","question":"Please cancel and refund","response":"I can help cancel the subscription.","count":1}
+{"id":"3","text":"vpn connection timeout","session_id":"s2","question":"VPN times out every morning","response":"Let's troubleshoot the network path.","count":1}

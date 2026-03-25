@@ -1,0 +1,50 @@
+name: publish
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.11"
+
+      - name: Sync dependencies
+        run: uv sync --extra dev
+
+      - name: Verify before publish
+        run: |
+          uv run pytest -q
+          rm -rf dist .venv-smoke-cli
+          uv run python -m build
+          uv run python scripts/smoke_installed_cli.py --dist-dir dist --venv-dir .venv-smoke-cli
+
+      - name: Require PyPI token
+        env:
+          PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+        if: ${{ env.PYPI_API_TOKEN == '' }}
+        run: |
+          echo "PYPI_API_TOKEN is required for publish workflow." >&2
+          exit 1
+
+      - name: Publish to PyPI
+        env:
+          PYPI_API_TOKEN: ${{ secrets.PYPI_API_TOKEN }}
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: |
+          uv run python -m pip install twine
+          uv run twine upload dist/*
