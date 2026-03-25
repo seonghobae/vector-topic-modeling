@@ -3,6 +3,12 @@ import re
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
+DISMISSED_AS_PATTERN = r"- Dismissed as:\s+`(tolerable_risk|won't_fix)`"
+DISMISSED_ON_PATTERN = (
+    r"- Dismissed on(?: \(UTC\))?:\s+\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z"
+)
+DISMISSED_COMMENT_PATTERN = r"- Dismissed comment:\s+\S"
+
 
 def read(relpath: str) -> str:
     return (REPO_ROOT / relpath).read_text(encoding="utf-8")
@@ -54,7 +60,22 @@ def test_dependency_exception_register_tracks_current_dismissed_advisory() -> No
     assert "## Active exception entries" in content
     assert "Last reviewed:" in content
     assert "Owner:" in content
-    assert "tolerable_risk" in content
+    active_section = re.search(
+        r"(?ms)^##\s+Active exception entries\s*\n(.*?)(?=^##\s+|\Z)",
+        content,
+    )
+    assert active_section, "Expected active exception entries section"
+
+    block = re.search(
+        r"(?ms)^###\s+GHSA-5239-wwwm-4pmq.*?(?=^###\s+|\Z)",
+        active_section.group(1),
+    )
+    assert block, "Expected active entry block for GHSA-5239-wwwm-4pmq"
+
+    entry = block.group(0)
+    assert re.search(DISMISSED_AS_PATTERN, entry)
+    assert re.search(DISMISSED_ON_PATTERN, entry)
+    assert re.search(DISMISSED_COMMENT_PATTERN, entry)
     assert "re-evaluation triggers" in content
 
 
