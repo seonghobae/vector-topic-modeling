@@ -33,21 +33,24 @@ uv run python scripts/smoke_installed_cli.py --dist-dir dist \
 
 ## Create a release
 
-1. Create and push a tag:
+1. Create and push a `v`-prefixed tag:
 
    ```bash
    git checkout main
    git pull --ff-only
-   git tag 0.1.1
-   git push origin 0.1.1
-   ```
+    git tag v0.1.1
+    git push origin v0.1.1
+    ```
 
-2. Create a GitHub Release from that tag.
-3. The publish workflow will build the package, rerun the installed-CLI
-   smoke check, and publish it when `PYPI_API_TOKEN` is configured in
-   the repository secrets.
+2. The `release.yml` workflow verifies tests/build/smoke and creates a
+   GitHub Release with artifacts from that tag.
+3. The `publish.yml` workflow then runs on `release.published` and
+   publishes to PyPI when `PYPI_API_TOKEN` is configured.
 4. Confirm the GitHub branch protection for `main` still requires the
    CI checks above before merging any last-minute fixes.
+
+You can also run `release.yml` manually with `workflow_dispatch` by
+passing an existing tag (for example, `v0.1.1`).
 
 ## Fallback manual publish
 

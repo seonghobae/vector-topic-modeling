@@ -79,6 +79,9 @@ result = modeler.fit_predict([
 
 See [`examples/`](./examples/) for end-to-end local usage samples.
 
+Detailed usage and troubleshooting guidance is in
+[`docs/user-manual.md`](./docs/user-manual.md).
+
 ## JSONL CLI input shape
 
 Each line should be a JSON object containing at least:
@@ -111,6 +114,7 @@ Sample files:
 ## Repository guides
 
 - [Contributing](./CONTRIBUTING.md)
+- [User manual](./docs/user-manual.md)
 - [Security policy](./SECURITY.md)
 - [Support](./SUPPORT.md)
 - [Changelog](./CHANGELOG.md)

@@ -34,6 +34,8 @@ shipped `vector-topic-modeling` console script help paths.
 ## Publishing status
 
 - GitHub is the canonical remote and release surface.
+- `.github/workflows/release.yml` runs on `v*` tags (and manual dispatch),
+  verifies the release gate, and creates GitHub Releases with artifacts.
 - `.github/workflows/publish.yml` publishes on GitHub Release events
   when `PYPI_API_TOKEN` is configured.
 - `main` branch protection must require `workflow-lint`,
