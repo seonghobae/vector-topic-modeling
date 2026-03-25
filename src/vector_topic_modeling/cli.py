@@ -18,6 +18,7 @@ from vector_topic_modeling.providers.openai_compat import (
 
 
 def build_parser() -> argparse.ArgumentParser:
+    """Build and return the argument parser for the CLI."""
     parser = argparse.ArgumentParser(
         prog="vector-topic-modeling",
         description="Standalone embedding-based topic modeling",
@@ -42,6 +43,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def validate_args(parser: argparse.ArgumentParser, args: argparse.Namespace) -> None:
+    """Validate parsed CLI arguments before executing commands."""
     if args.command == "cluster":
         if args.min_topics < 1:
             parser.error("--min-topics must be >= 1")
@@ -54,6 +56,7 @@ def validate_args(parser: argparse.ArgumentParser, args: argparse.Namespace) -> 
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Execute the CLI program."""
     parser = build_parser()
     args = parser.parse_args(argv)
     validate_args(parser, args)
@@ -104,5 +107,6 @@ def _load_jsonl(
     *,
     ingestion_config_path: str | None = None,
 ) -> list[TopicDocument]:
+    """Load TopicDocuments from a JSONL file, applying optional ingestion config."""
     config = load_ingestion_config(ingestion_config_path)
     return load_jsonl_topic_documents(path, config=config)
