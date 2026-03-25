@@ -32,6 +32,11 @@ def build_parser() -> argparse.ArgumentParser:
     cluster.add_argument("--api-key")
     cluster.add_argument("--model", default="text-embedding-3-large")
     cluster.add_argument("--similarity-threshold", type=float, default=0.85)
+    cluster.add_argument("--min-topics", type=int, default=2)
+    cluster.add_argument("--max-topics", type=int, default=30)
+    cluster.add_argument("--max-top-share", type=float, default=0.35)
+    cluster.add_argument("--display-limit", type=int, default=30)
+    cluster.add_argument("--use-session-representatives", action="store_true")
     cluster.add_argument("--ingestion-config")
     return parser
 
@@ -56,6 +61,11 @@ def main(argv: list[str] | None = None) -> int:
         config=TopicModelConfig(
             similarity_threshold=float(args.similarity_threshold),
             embedding_model_name=args.model,
+            min_topics=args.min_topics,
+            max_topics=args.max_topics,
+            max_top_share=args.max_top_share,
+            use_session_representatives=args.use_session_representatives,
+            display_limit=args.display_limit,
         ),
     )
     result = modeler.fit_predict(docs)
