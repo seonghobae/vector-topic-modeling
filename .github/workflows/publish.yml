@@ -7,6 +7,7 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    environment: pypi
     permissions:
       contents: read
       id-token: write
@@ -34,6 +35,6 @@ jobs:
           uv run python scripts/smoke_installed_cli.py --dist-dir dist --venv-dir .venv-smoke-cli
 
       - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+        uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e # v1.13.0
         with:
           packages-dir: dist/
