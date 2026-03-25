@@ -50,6 +50,12 @@ database storage, background jobs, XLSX export, and email delivery.
 - `ci.yml` validates tests/builds, smoke-tests the installed wheel and
   CLI entrypoint, and `publish.yml` repeats that verification before the
   release-to-PyPI path when credentials are configured.
+- `trivy.yml` runs Trivy filesystem scanning on every push and PR
+  (plus a weekly schedule) and uploads SARIF results to GitHub Security.
+- `codeql.yml` performs CodeQL static analysis for Python on every push
+  and PR (plus a weekly schedule) and uploads findings to GitHub Security.
+- `dependency-review.yml` reviews dependency changes in each PR and
+  fails on high-severity known vulnerabilities.
 - `.github/dependabot.yml` is the canonical dependency-update automation
   baseline for `pip` and `github-actions` ecosystems.
 - `main` branch protection requires `workflow-lint`,
