@@ -11,6 +11,11 @@
     unpatchable upstream,
   - any advisory resolved via dependency upgrade has been moved to
     `Resolved exception entries` in the same change set as the upgrade.
+- Security advisory governance is clean:
+  - if the release includes a security fix, a Draft advisory exists with
+    affected/fixed version intent,
+  - disclosure sequencing follows
+    `docs/security/security-advisories-workflow.md`.
 
 ## Local verification
 
@@ -53,6 +58,19 @@ Before tagging:
   already contains a patched version for that advisory path.
 - If such an advisory exists, stop release prep and update the dependency and
   exception register first.
+
+## Security advisory release gate
+
+Before tagging:
+
+- Review GitHub `Security > Advisories` state.
+- If this release includes a security fix:
+  - verify Draft advisory metadata includes affected/fixed versions,
+  - prepare release references (tag, PR/commit) for advisory publication.
+- After release publication, publish the advisory and verify the fixed version
+  metadata matches the released artifact version.
+- Update release notes / `CHANGELOG.md` with a security-fix entry that
+  references advisory ID (GHSA/CVE when available) and fixed version.
 
 ## Create a release
 
