@@ -24,6 +24,8 @@ uv run python scripts/smoke_installed_cli.py --dist-dir dist \
 - `workflow-lint`
 - `test-and-build (3.11)`
 - `test-and-build (3.12)`
+- pull-request-only merges (no direct push to `main`)
+- at least one approving PR review before merge
 
 ## Versioning
 
@@ -47,7 +49,8 @@ uv run python scripts/smoke_installed_cli.py --dist-dir dist \
 3. The `publish.yml` workflow then runs on `release.published` and
    publishes to PyPI when `PYPI_API_TOKEN` is configured.
 4. Confirm the GitHub branch protection for `main` still requires the
-   CI checks above before merging any last-minute fixes.
+   CI checks above and at least one approving PR review before merging
+   any last-minute fixes.
 
 You can also run `release.yml` manually with `workflow_dispatch` by
 passing an existing tag (for example, `v0.1.1`).

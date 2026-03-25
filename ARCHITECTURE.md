@@ -42,7 +42,8 @@ database storage, background jobs, XLSX export, and email delivery.
 
 - GitHub is the canonical collaboration surface for issues, PRs,
   branch protection, CI, and releases.
-- `main` is protected; change flow should go through feature branches and pull requests.
+- `main` is protected with pull-request-only merges, a minimum of one
+  approving review, and required checks.
 - `ci.yml` validates tests/builds, smoke-tests the installed wheel and
   CLI entrypoint, and `publish.yml` repeats that verification before the
   release-to-PyPI path when credentials are configured.
