@@ -15,6 +15,8 @@
 
 - Prefer small pure functions and explicit dataclasses.
 - Keep the public API exported from `src/vector_topic_modeling/__init__.py`.
+- Keep source-row ingestion/mapping logic in `src/vector_topic_modeling/ingestion.py`
+  so `pipeline.py` stays model-focused and provider-agnostic.
 
 ## Documentation
 
