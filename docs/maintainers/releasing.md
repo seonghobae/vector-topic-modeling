@@ -19,11 +19,16 @@ uv run python scripts/smoke_installed_cli.py --dist-dir dist \
   --venv-dir .venv-smoke-cli
 ```
 
-`main` must keep the required GitHub checks green before tagging a release:
+`main` must keep the required GitHub checks green before tagging a release.
+
+Required CI status checks:
 
 - `workflow-lint`
 - `test-and-build (3.11)`
 - `test-and-build (3.12)`
+
+Branch protection / merge policy:
+
 - pull-request-only merges (no direct push to `main`)
 - at least one approving PR review before merge
 
