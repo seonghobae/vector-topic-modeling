@@ -263,23 +263,18 @@ name = "vector-topic-modeling"
 version = "0.1.0"
 source = { editable = "." }
 
-[package.optional-dependencies]
+[package.dev-dependencies]
 dev = [
     { name = "build" },
     { name = "pytest" },
-]
-
-[package.dev-dependencies]
-dev = [
     { name = "pytest-cov" },
 ]
 
 [package.metadata]
-requires-dist = [
-    { name = "build", marker = "extra == 'dev'", specifier = ">=1.2.2" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.3.0" },
-]
-provides-extras = ["dev"]
 
 [package.metadata.requires-dev]
-dev = [{ name = "pytest-cov", specifier = ">=7.1.0" }]
+dev = [
+    { name = "build", specifier = ">=1.2.2" },
+    { name = "pytest", specifier = ">=8.3.0" },
+    { name = "pytest-cov", specifier = ">=7.1.0" },
+]

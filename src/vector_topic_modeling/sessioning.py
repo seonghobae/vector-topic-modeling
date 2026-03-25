@@ -71,6 +71,8 @@ def build_digest_counts_all_pairs(
             continue
         raw = row.get("count")
         if isinstance(raw, bool):
+            # Design decision: Treat boolean True as a count of 1 for digest occurrences
+            # (used in test_build_digest_counts_all_pairs expectations).
             count = int(raw)
         elif isinstance(raw, int):
             count = raw
@@ -120,6 +122,8 @@ def aggregate_session_topic_counts(
             continue
         raw = row.get("count")
         if isinstance(raw, bool):
+            # Design decision: Unlike build_digest_counts_all_pairs, boolean values
+            # are explicitly coerced to 0 here to prevent invalid aggregations.
             count = 0
         elif isinstance(raw, int):
             count = raw
