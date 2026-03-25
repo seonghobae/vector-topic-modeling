@@ -29,6 +29,9 @@
 
 - Keep `.github/dependabot.yml` aligned with repository dependency update
   policy for `pip` and `github-actions`.
+- Keep GitHub Security Advisories workflow documentation current in
+  `docs/security/security-advisories-workflow.md` and keep `SECURITY.md`
+  linked to it.
 - If a Dependabot alert is dismissed without an upstream patch, update
   `docs/security/dependency-vulnerability-exceptions.md` in the same
   change set.

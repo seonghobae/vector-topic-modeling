@@ -59,4 +59,7 @@ database storage, background jobs, XLSX export, and email delivery.
   `docs/security/dependency-vulnerability-exceptions.md`, re-evaluated on
   advisory/dependency/release changes, and moved from Active to Resolved when
   patched versions are adopted.
+- GitHub Security Advisories is the canonical private vulnerability intake and
+  disclosure workflow surface, documented in
+  `docs/security/security-advisories-workflow.md`.
 - Local verification remains the fastest pre-PR evidence path.

@@ -15,5 +15,8 @@
 - Dependency governance includes `.github/dependabot.yml` coverage for
   `pip` and `github-actions`, and documented handling for unpatchable
   dismissed advisories under `docs/security/`.
+- Security governance documents private vulnerability intake/disclosure flow via
+  GitHub Security Advisories in `SECURITY.md` and
+  `docs/security/security-advisories-workflow.md`.
 - Repository polish changes keep contributor/release/community docs aligned
   with actual GitHub workflow and protected-branch policy.

@@ -4,16 +4,38 @@
 
 Please do not open a public GitHub issue for suspected security vulnerabilities.
 
-Instead, report them privately via GitHub Security Advisories if enabled for this repository, or contact the maintainer directly with:
+Instead, report them privately via GitHub Security Advisories:
+
+- Report form: <https://github.com/seonghobae/vector-topic-modeling/security/advisories/new>
+- Canonical workflow: `docs/security/security-advisories-workflow.md`
+
+If GitHub Security Advisories is temporarily unavailable, contact the
+maintainer directly via one of the following channels:
+
+- Maintainer GitHub handle: <https://github.com/seonghobae>
+- Maintainer security email: `me@seonghobae.me`
+
+Include:
 
 - affected version
 - reproduction details
 - impact assessment
 - any suggested mitigation
 
+Maintainer response targets:
+
+- initial acknowledgement within 3 business days
+- severity/impact triage within 5 business days
+- coordinated fix/disclosure timeline shared after triage
+
+Do not include exploit details in public issues, pull requests, or commit
+messages before coordinated disclosure and fixed release availability.
+
 ## Scope
 
-The main security-sensitive area in this repository is the outbound OpenAI-compatible provider adapter and any text sent to it for embedding generation.
+The main security-sensitive area in this repository is the outbound
+OpenAI-compatible provider adapter and any text sent to it for embedding
+generation.
 
 Current guardrails include:
 
