@@ -1,0 +1,3 @@
+{"account_id":"acc-100","thread_id":"thr-1","columns":[{"column":"query","value":"3월 청구서에서 중복 결제가 보여요."},{"column":"answer","value":"결제 로그를 확인해 환불 절차를 진행하겠습니다."}]}
+{"account_id":"acc-100","thread_id":"thr-1","payload":{"intent":"billing_refund","locale":"ko-KR","summary":"중복 결제 환불 요청"}}
+{"account_id":"acc-200","thread_id":"thr-9","payload":{"intent":"vpn_timeout","summary":"아침마다 VPN 연결이 끊겨요."}}

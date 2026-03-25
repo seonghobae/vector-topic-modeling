@@ -14,6 +14,7 @@ Last updated: 2026-03-25
 │   ├── text.py
 │   ├── service.py
 │   ├── pipeline.py
+│   ├── ingestion.py
 │   ├── cli.py
 │   └── providers/
 ├── examples/                  # Runnable local examples and sample JSONL
@@ -26,11 +27,13 @@ Last updated: 2026-03-25
 ## Runtime model
 
 1. Caller provides documents or JSONL rows.
-2. `TopicModeler` normalizes text and computes digest keys.
-3. Embeddings are fetched through an injected provider.
-4. Clustering is performed with a dependency-light greedy/adaptive
+2. `ingestion.py` maps raw rows (flat rows, DB column-value rows, or JSON payloads)
+   into `TopicDocument` records and can compose `session_id` from primary-key bundles.
+3. `TopicModeler` normalizes text and computes digest keys.
+4. Embeddings are fetched through an injected provider.
+5. Clustering is performed with a dependency-light greedy/adaptive
    kernel.
-5. Optional session-aware digest selection prevents repeated boilerplate
+6. Optional session-aware digest selection prevents repeated boilerplate
    from dominating.
 
 ## Explicit exclusions

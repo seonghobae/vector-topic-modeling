@@ -6,6 +6,10 @@ import argparse
 import json
 from pathlib import Path
 
+from vector_topic_modeling.ingestion import (
+    load_ingestion_config,
+    load_jsonl_topic_documents,
+)
 from vector_topic_modeling.pipeline import TopicDocument, TopicModelConfig, TopicModeler
 from vector_topic_modeling.providers.openai_compat import (
     OpenAICompatConfig,
@@ -28,6 +32,7 @@ def build_parser() -> argparse.ArgumentParser:
     cluster.add_argument("--api-key")
     cluster.add_argument("--model", default="text-embedding-3-large")
     cluster.add_argument("--similarity-threshold", type=float, default=0.85)
+    cluster.add_argument("--ingestion-config")
     return parser
 
 
@@ -37,7 +42,10 @@ def main(argv: list[str] | None = None) -> int:
         raise ValueError(f"Unsupported command: {args.command}")
     if not args.base_url or not args.api_key:
         raise ValueError("cluster requires --base-url and --api-key")
-    docs = _load_jsonl(Path(args.input_path))
+    docs = _load_jsonl(
+        Path(args.input_path),
+        ingestion_config_path=args.ingestion_config,
+    )
     provider = OpenAICompatEmbeddingProvider(
         OpenAICompatConfig(
             base_url=args.base_url, api_key=args.api_key, model=args.model
@@ -67,20 +75,10 @@ def main(argv: list[str] | None = None) -> int:
     return 0
 
 
-def _load_jsonl(path: Path) -> list[TopicDocument]:
-    documents: list[TopicDocument] = []
-    for line in path.read_text(encoding="utf-8").splitlines():
-        if not line.strip():
-            continue
-        row = json.loads(line)
-        documents.append(
-            TopicDocument(
-                id=str(row.get("id") or row.get("document_id") or len(documents)),
-                text=str(row.get("text") or ""),
-                session_id=row.get("session_id"),
-                question=row.get("question"),
-                response=row.get("response"),
-                count=int(row.get("count") or 1),
-            )
-        )
-    return documents
+def _load_jsonl(
+    path: Path,
+    *,
+    ingestion_config_path: str | None = None,
+) -> list[TopicDocument]:
+    config = load_ingestion_config(ingestion_config_path)
+    return load_jsonl_topic_documents(path, config=config)

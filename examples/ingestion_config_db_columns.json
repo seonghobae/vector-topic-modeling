@@ -1,0 +1,9 @@
+{
+  "id_fields": ["account_id"],
+  "payload_fields": ["payload"],
+  "content_fields": ["query", "answer"],
+  "session_key_fields": ["account_id", "thread_id"],
+  "column_value_path": "columns",
+  "column_name_field": "column",
+  "column_value_field": "value"
+}
