@@ -80,9 +80,5 @@ def _load_jsonl(
     *,
     ingestion_config_path: str | None = None,
 ) -> list[TopicDocument]:
-    config = (
-        load_ingestion_config(Path(ingestion_config_path))
-        if ingestion_config_path
-        else load_ingestion_config(None)
-    )
+    config = load_ingestion_config(ingestion_config_path)
     return load_jsonl_topic_documents(path, config=config)

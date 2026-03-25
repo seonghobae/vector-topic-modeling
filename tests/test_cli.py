@@ -112,3 +112,7 @@ def test_cli_cluster_supports_generic_ingestion_config(
     assert rc == 0
     assert payload["topics"]
     assert payload["assignments"][0]["document_id"] == "account-1"
+    assert payload["session_topic_counts"]
+    assert payload["session_topic_counts"][0]["session_id"]
+    assert "account-1" in payload["session_topic_counts"][0]["session_id"]
+    assert "thread-2" in payload["session_topic_counts"][0]["session_id"]

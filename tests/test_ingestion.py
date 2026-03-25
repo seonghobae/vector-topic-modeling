@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 from pathlib import Path
 
@@ -76,10 +76,8 @@ def test_topic_document_from_row_builds_session_id_from_primary_key_bundle() -> 
 
     doc = topic_document_from_row(row, row_index=0, config=config)
 
-    assert doc.session_id is not None
-    assert doc.session_id.startswith("pk:")
-    assert '"tenant_id":"t-1"' in doc.session_id
-    assert '"thread_id":"th-9"' in doc.session_id
+    expected_session_id = 'pk:{"tenant_id":"t-1","thread_id":"th-9"}'
+    assert doc.session_id == expected_session_id
 
 
 def test_load_jsonl_topic_documents_accepts_config_file(tmp_path: Path) -> None:
@@ -121,7 +119,7 @@ def test_load_ingestion_config_rejects_non_object_json(tmp_path: Path) -> None:
     config_path = tmp_path / "ingestion.json"
     config_path.write_text(json.dumps(["bad"]), encoding="utf-8")
 
-    with pytest.raises(ValueError, match="JSON object"):
+    with pytest.raises(TypeError, match="JSON object"):
         load_ingestion_config(config_path)
 
 
@@ -136,7 +134,7 @@ def test_load_jsonl_topic_documents_rejects_non_object_rows(tmp_path: Path) -> N
 def test_topic_document_from_row_accepts_non_json_serializable_payload_values() -> None:
     row = {
         "id": "doc-x",
-        "payload": {"ts": datetime(2026, 1, 1, 0, 0)},
+        "payload": {"ts": datetime(2026, 1, 1, 0, 0, tzinfo=timezone.utc)},
     }
 
     doc = topic_document_from_row(row, row_index=0)

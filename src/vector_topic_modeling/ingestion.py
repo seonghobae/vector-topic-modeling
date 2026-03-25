@@ -2,10 +2,11 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 import json
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any
 
 from vector_topic_modeling.pipeline import TopicDocument
 from vector_topic_modeling.text import build_qa_pair_text, normalize_text
@@ -28,12 +29,12 @@ class TopicDocumentIngestionConfig:
     max_text_chars: int = 4000
 
 
-def load_ingestion_config(path: Path | None) -> TopicDocumentIngestionConfig:
+def load_ingestion_config(path: str | Path | None) -> TopicDocumentIngestionConfig:
     if path is None:
         return TopicDocumentIngestionConfig()
-    parsed = json.loads(path.read_text(encoding="utf-8"))
+    parsed = json.loads(Path(path).read_text(encoding="utf-8"))
     if not isinstance(parsed, dict):
-        raise ValueError("ingestion config must be a JSON object")
+        raise TypeError("ingestion config must be a JSON object")
     return TopicDocumentIngestionConfig(
         id_fields=_to_field_tuple(
             parsed.get("id_fields"), fallback=("id", "document_id")
@@ -169,7 +170,7 @@ def _resolve_text(
                 pieces.append(f"{field}: {rendered}")
         if pieces:
             return normalize_text("\n".join(pieces), max_chars=config.max_text_chars)
-    payload_text = _first_non_empty_payload(row, config.payload_fields)
+    payload_text = _first_non_empty(row, config.payload_fields)
     if payload_text:
         return normalize_text(payload_text, max_chars=config.max_text_chars)
     if question or response:
@@ -209,15 +210,6 @@ def _materialize_column_value_fields(
 def _first_non_empty(row: Mapping[str, object], fields: tuple[str, ...]) -> str:
     for field in fields:
         rendered = _stringify(row.get(field)).strip()
-        if rendered:
-            return rendered
-    return ""
-
-
-def _first_non_empty_payload(row: Mapping[str, object], fields: tuple[str, ...]) -> str:
-    for field in fields:
-        value = row.get(field)
-        rendered = _stringify(value).strip()
         if rendered:
             return rendered
     return ""
