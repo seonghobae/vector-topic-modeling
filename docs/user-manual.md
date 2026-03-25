@@ -184,3 +184,69 @@ uv run python scripts/smoke_installed_cli.py --dist-dir dist --venv-dir .venv-sm
 ### 6.3 Manual release trigger
 
 You can also run `release.yml` via **workflow_dispatch** with an existing tag.
+
+## 7) Sequence Diagrams
+
+### 7.1 CLI clustering runtime flow
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant U as User
+    participant C as CLI (vector-topic-modeling)
+    participant M as TopicModeler
+    participant P as OpenAICompatEmbeddingProvider
+    participant E as Embedding API (/v1/embeddings)
+    participant G as Clustering (adaptive + rescue)
+    participant O as Output JSON file
+
+    U->>C: vector-topic-modeling cluster INPUT_JSONL --output OUTPUT_JSON ...
+    C->>C: Parse args + validate --base-url/--api-key
+    C->>C: Load JSONL -> TopicDocument[]
+    C->>M: fit_predict(documents)
+
+    M->>M: Normalize text, build digests/counts, unique_texts
+    M->>P: embed(unique_texts)
+    P->>E: POST /v1/embeddings {model, input[]}
+    E-->>P: 200 {data:[{index, embedding}, ...]}
+    P-->>M: vectors[] (index-aligned)
+
+    M->>G: adaptive_greedy_cluster(items, threshold, bounds)
+    G-->>M: clusters + chosen_threshold
+    M->>G: rescue_display_dominance(...)
+    G-->>M: final clusters
+
+    M->>M: stable_topic_id + assignments + session_topic_counts
+    M-->>C: TopicModelResult
+    C->>O: Write topics/assignments/session_topic_counts as JSON
+    O-->>U: OUTPUT_JSON ready
+```
+
+### 7.2 Release automation flow
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant M as Maintainer
+    participant GH as GitHub
+    participant R as release.yml
+    participant REL as GitHub Release
+    participant P as publish.yml
+    participant PY as PyPI
+
+    M->>GH: git push origin vX.Y.Z
+    GH->>R: Trigger on push.tags (v*)
+    R->>R: Checkout tagged commit + validate SemVer tag
+    R->>R: uv sync --extra dev
+    R->>R: pytest + build + smoke_installed_cli
+    R->>R: Generate SHA256SUMS for dist/*
+    R->>REL: Create/update release and upload dist artifacts
+
+    REL-->>GH: release.published event
+    GH->>P: Trigger publish workflow
+    P->>P: uv sync --extra dev
+    P->>P: Re-run pytest + build + smoke gate
+    P->>P: Require PYPI_API_TOKEN
+    P->>PY: twine upload dist/*
+    PY-->>M: New package version available
+```
