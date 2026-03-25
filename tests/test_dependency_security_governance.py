@@ -60,9 +60,15 @@ def test_dependency_exception_register_tracks_current_dismissed_advisory() -> No
     assert "## Active exception entries" in content
     assert "Last reviewed:" in content
     assert "Owner:" in content
+    active_section = re.search(
+        r"(?ms)^##\s+Active exception entries\s*\n(.*?)(?=^##\s+|\Z)",
+        content,
+    )
+    assert active_section, "Expected active exception entries section"
+
     block = re.search(
         r"(?ms)^###\s+GHSA-5239-wwwm-4pmq.*?(?=^###\s+|\Z)",
-        content,
+        active_section.group(1),
     )
     assert block, "Expected active entry block for GHSA-5239-wwwm-4pmq"
 
