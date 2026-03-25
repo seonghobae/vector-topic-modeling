@@ -16,6 +16,8 @@ client in `src/vector_topic_modeling/providers/openai_compat.py`.
 
 - Keep `.github/dependabot.yml` present and configured for `pip` and
   `github-actions` ecosystems.
+- `dependency-review.yml` runs on every PR and fails on high-severity
+  known vulnerabilities in added or changed dependencies.
 - Review dependency-update PRs promptly and keep the lock file current via
   the normal `uv` workflow.
 - If a vulnerability has no patched upstream version, do not leave it as
@@ -40,6 +42,15 @@ client in `src/vector_topic_modeling/providers/openai_compat.py`.
 - If an API-adjacent vulnerability is found in provider adapters or outbound
   request shaping logic, create/update a Draft GitHub Security Advisory and
   follow the private fix workflow before public disclosure.
+
+## Automated security scanning
+
+- `trivy.yml` runs Trivy filesystem scanning on every push, PR, and weekly
+  schedule, reporting CRITICAL and HIGH severity findings as SARIF to GitHub
+  Security.
+- `codeql.yml` performs CodeQL static analysis for Python on every push, PR,
+  and weekly schedule, surfacing security and quality findings in GitHub
+  Security.
 
 ## Not currently applicable
 
