@@ -86,8 +86,6 @@ def _avg_vectors(
         return list(prev_centroid)
     weight_prev = max(prev_weight, 0.0)
     weight_sum = weight_prev + 1.0
-    if weight_sum <= 0.0:
-        return list(prev_centroid)
     return [
         (p * weight_prev + v) / weight_sum
         for p, v in zip(prev_centroid, new_vector, strict=True)
@@ -185,8 +183,6 @@ def adaptive_greedy_cluster(
             penalty += (top_share - max_share) * 10.0
         if cluster_count < min_k:
             penalty += (min_k - cluster_count) / float(min_k)
-        if cluster_count > max_k:
-            penalty += (cluster_count - max_k) / float(max_k)
         if best_penalty is None or penalty < best_penalty:
             best_penalty = penalty
             best = {
