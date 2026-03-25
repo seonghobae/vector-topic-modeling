@@ -4,7 +4,9 @@ import re
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 DISMISSED_AS_PATTERN = r"- Dismissed as:\s+`(tolerable_risk|won't_fix)`"
-DISMISSED_ON_PATTERN = r"- Dismissed on:\s+\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z"
+DISMISSED_ON_PATTERN = (
+    r"- Dismissed on(?: \(UTC\))?:\s+\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z"
+)
 DISMISSED_COMMENT_PATTERN = r"- Dismissed comment:\s+\S"
 
 
