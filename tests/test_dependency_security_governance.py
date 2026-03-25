@@ -40,6 +40,8 @@ def test_api_security_checklist_includes_dependency_exception_policy() -> None:
     assert "## Dependency supply-chain checks" in content
     assert ".github/dependabot.yml" in content
     assert "docs/security/dependency-vulnerability-exceptions.md" in content
+    assert "before each tagged release cut" in content
+    assert "add it under resolved entries" in content
 
 
 def test_dependency_exception_register_tracks_current_dismissed_advisory() -> None:
@@ -47,8 +49,18 @@ def test_dependency_exception_register_tracks_current_dismissed_advisory() -> No
 
     assert re.search(r"GHSA-[0-9a-z]{4}-[0-9a-z]{4}-[0-9a-z]{4}", content)
     assert "## Required fields per entry" in content
+    assert "## Exception lifecycle (required)" in content
+    assert "## Resolved exception entries" in content
     assert "## Active exception entries" in content
     assert "Last reviewed:" in content
     assert "Owner:" in content
     assert "tolerable_risk" in content
     assert "re-evaluation triggers" in content
+
+
+def test_release_guide_contains_dependency_exception_gate() -> None:
+    content = read("docs/maintainers/releasing.md")
+
+    assert "## Dependency-exception release gate" in content
+    assert "Resolved exception entries" in content
+    assert "stop release prep" in content

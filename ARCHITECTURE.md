@@ -53,6 +53,7 @@ database storage, background jobs, XLSX export, and email delivery.
   `test-and-build (3.11)`, and `test-and-build (3.12)` so releases
   cannot bypass CI evidence.
 - Vulnerability dismissals that lack an upstream patch must be recorded in
-  `docs/security/dependency-vulnerability-exceptions.md` and re-evaluated
-  on advisory/dependency/release changes.
+  `docs/security/dependency-vulnerability-exceptions.md`, re-evaluated on
+  advisory/dependency/release changes, and moved from Active to Resolved when
+  patched versions are adopted.
 - Local verification remains the fastest pre-PR evidence path.
