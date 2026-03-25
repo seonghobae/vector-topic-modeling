@@ -33,6 +33,14 @@ client in `src/vector_topic_modeling/providers/openai_compat.py`.
     link, date, and owner,
   - verify the advisory is no longer tracked as a tolerated dismissal.
 
+## Security advisory governance linkage
+
+- Repository-wide vulnerability intake, triage, and disclosure sequencing is
+  governed by `docs/security/security-advisories-workflow.md`.
+- If an API-adjacent vulnerability is found in provider adapters or outbound
+  request shaping logic, create/update a Draft GitHub Security Advisory and
+  follow the private fix workflow before public disclosure.
+
 ## Not currently applicable
 
 - Authentication/authorization middleware
