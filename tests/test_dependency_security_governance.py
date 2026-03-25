@@ -54,7 +54,16 @@ def test_dependency_exception_register_tracks_current_dismissed_advisory() -> No
     assert "## Active exception entries" in content
     assert "Last reviewed:" in content
     assert "Owner:" in content
-    assert "tolerable_risk" in content
+    block = re.search(
+        r"(?ms)^###\s+GHSA-5239-wwwm-4pmq.*?(?=^###\s+|\Z)",
+        content,
+    )
+    assert block, "Expected active entry block for GHSA-5239-wwwm-4pmq"
+
+    entry = block.group(0)
+    assert re.search(r"- Dismissed as:\s+`(tolerable_risk|won't_fix)`", entry)
+    assert re.search(r"- Dismissed on:\s+\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z", entry)
+    assert re.search(r"- Dismissed comment:\s+\S", entry)
     assert "re-evaluation triggers" in content
 
 
