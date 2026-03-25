@@ -44,3 +44,14 @@ shipped `vector-topic-modeling` console script help paths.
   and `test-and-build (3.12)` before merge.
 - No long-running deploy queue or runtime service exists; package build
   artifacts are the deployable output.
+
+## Security advisory release coordination
+
+If a release contains a security fix, coordinate this order:
+
+1. publish fixed release artifacts,
+2. publish the GitHub Security Advisory,
+3. verify advisory fixed-version metadata equals the released artifact version.
+
+Do not publish exploit-level detail in public channels before fixed artifacts
+are available.
