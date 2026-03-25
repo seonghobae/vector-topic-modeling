@@ -86,7 +86,7 @@ Before tagging:
 2. The `release.yml` workflow verifies tests/build/smoke and creates a
    GitHub Release with artifacts from that tag.
 3. The `publish.yml` workflow then runs on `release.published` and
-   publishes to PyPI when `PYPI_API_TOKEN` is configured.
+   publishes to PyPI using PyPI Trusted Publishing (OIDC).
 4. Confirm the GitHub branch protection for `main` still requires the
    CI checks above and at least one approving PR review before merging
    any last-minute fixes.
