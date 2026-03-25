@@ -21,6 +21,9 @@ Current guardrails include:
 - URL scheme validation (`http`/`https` only)
 - redaction of some sensitive text patterns before outbound requests
 - no runtime dependency on external application databases or auth stacks
+- dependency-vulnerability dismissals are temporary, tracked in
+  `docs/security/dependency-vulnerability-exceptions.md`, and must move from
+  Active to Resolved when a patched version is adopted
 
 ## Supported versions
 

@@ -24,7 +24,14 @@ client in `src/vector_topic_modeling/providers/openai_compat.py`.
 - Re-evaluate each recorded exception whenever one of the following occurs:
   - upstream advisory metadata changes (patched version, severity, scope),
   - dependency graph changes (`uv.lock` refresh or dependency additions),
-  - release cut / branch-protection policy changes.
+  - before each tagged release cut.
+- If a previously dismissed advisory becomes patchable and the repository
+  upgrades to the patched version, close the exception in the same change set:
+  - remove it from active entries in
+    `docs/security/dependency-vulnerability-exceptions.md`,
+  - add it under resolved entries with fixed version (`uv.lock`), PR/commit
+    link, date, and owner,
+  - verify the advisory is no longer tracked as a tolerated dismissal.
 
 ## Not currently applicable
 
