@@ -17,8 +17,9 @@ def test_security_md_references_private_reporting_workflow() -> None:
 
 def test_security_advisories_workflow_contains_required_sections() -> None:
     content = read("docs/security/security-advisories-workflow.md")
+    lower_content = content.lower()
 
-    for fragment in (
+    required_sections = (
         "# GitHub Security Advisories Workflow",
         "## Scope",
         "## Roles and ownership",
@@ -28,8 +29,14 @@ def test_security_advisories_workflow_contains_required_sections() -> None:
         "## Publishing workflow",
         "## Dependency advisory handling",
         "## Dry-run rehearsal log",
-    ):
+    )
+
+    positions: list[int] = []
+    for fragment in required_sections:
         assert fragment in content
+        positions.append(content.find(fragment))
+
+    assert positions == sorted(positions)
 
     assert "Security > Advisories" in content
     assert "docs/security/dependency-vulnerability-exceptions.md" in content
@@ -37,6 +44,15 @@ def test_security_advisories_workflow_contains_required_sections() -> None:
     assert "Follow-up improvements" in content
     assert "affected versions" in content
     assert "first fixed version" in content
+
+    sequence = [
+        "fixed artifacts",
+        "publish the github security advisory",
+        "changelog.md",
+    ]
+    sequence_positions = [lower_content.find(token) for token in sequence]
+    assert all(position != -1 for position in sequence_positions)
+    assert sequence_positions == sorted(sequence_positions)
 
 
 def test_security_workflow_requires_changelog_security_fix_entry() -> None:

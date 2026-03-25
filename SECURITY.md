@@ -10,7 +10,12 @@ Instead, report them privately via GitHub Security Advisories:
 - Canonical workflow: `docs/security/security-advisories-workflow.md`
 
 If GitHub Security Advisories is temporarily unavailable, contact the
-maintainer directly with:
+maintainer directly via one of the following channels:
+
+- Maintainer GitHub handle: <https://github.com/seonghobae>
+- Maintainer security email: `me@seonghobae.me`
+
+Include:
 
 - affected version
 - reproduction details
