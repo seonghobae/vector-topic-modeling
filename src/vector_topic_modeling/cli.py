@@ -18,6 +18,7 @@ from vector_topic_modeling.providers.openai_compat import (
 
 
 def build_parser() -> argparse.ArgumentParser:
+    """Build and return the argument parser for the CLI."""
     parser = argparse.ArgumentParser(
         prog="vector-topic-modeling",
         description="Standalone embedding-based topic modeling",
@@ -32,12 +33,33 @@ def build_parser() -> argparse.ArgumentParser:
     cluster.add_argument("--api-key")
     cluster.add_argument("--model", default="text-embedding-3-large")
     cluster.add_argument("--similarity-threshold", type=float, default=0.85)
+    cluster.add_argument("--min-topics", type=int, default=2)
+    cluster.add_argument("--max-topics", type=int, default=30)
+    cluster.add_argument("--max-top-share", type=float, default=0.35)
+    cluster.add_argument("--display-limit", type=int, default=30)
+    cluster.add_argument("--use-session-representatives", action="store_true")
     cluster.add_argument("--ingestion-config")
     return parser
 
 
+def validate_args(parser: argparse.ArgumentParser, args: argparse.Namespace) -> None:
+    """Validate parsed CLI arguments before executing commands."""
+    if args.command == "cluster":
+        if args.min_topics < 1:
+            parser.error("--min-topics must be >= 1")
+        if args.min_topics > args.max_topics:
+            parser.error("--min-topics must be <= --max-topics")
+        if not (0 < args.max_top_share <= 1):
+            parser.error("--max-top-share must be in (0, 1]")
+        if args.display_limit < 0:
+            parser.error("--display-limit must be >= 0")
+
+
 def main(argv: list[str] | None = None) -> int:
-    args = build_parser().parse_args(argv)
+    """Execute the CLI program."""
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    validate_args(parser, args)
     if args.command != "cluster":
         raise ValueError(f"Unsupported command: {args.command}")
     if not args.base_url or not args.api_key:
@@ -56,6 +78,11 @@ def main(argv: list[str] | None = None) -> int:
         config=TopicModelConfig(
             similarity_threshold=float(args.similarity_threshold),
             embedding_model_name=args.model,
+            min_topics=args.min_topics,
+            max_topics=args.max_topics,
+            max_top_share=args.max_top_share,
+            use_session_representatives=args.use_session_representatives,
+            display_limit=args.display_limit,
         ),
     )
     result = modeler.fit_predict(docs)
@@ -80,5 +107,6 @@ def _load_jsonl(
     *,
     ingestion_config_path: str | None = None,
 ) -> list[TopicDocument]:
+    """Load TopicDocuments from a JSONL file, applying optional ingestion config."""
     config = load_ingestion_config(ingestion_config_path)
     return load_jsonl_topic_documents(path, config=config)
