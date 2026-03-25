@@ -65,10 +65,14 @@ def test_security_workflow_requires_changelog_security_fix_entry() -> None:
 def test_release_and_deploy_docs_include_security_advisory_gate() -> None:
     releasing = read("docs/maintainers/releasing.md")
     runbook = read("docs/operations/deploy-runbook.md")
+    releasing_lower = releasing.lower()
 
     assert "## Security advisory release gate" in releasing
+    assert "Before tagging:" in releasing
+    assert "## Post-release security advisory publication" in releasing
+    assert "After release publication:" in releasing
     assert "Security > Advisories" in releasing
-    assert "publish the advisory" in releasing
+    assert "publish the advisory" in releasing_lower
     assert "CHANGELOG.md" in releasing
     assert "advisory ID" in releasing
     assert "## Security advisory release coordination" in runbook
@@ -77,10 +81,13 @@ def test_release_and_deploy_docs_include_security_advisory_gate() -> None:
 
 def test_architecture_agents_and_acceptance_reference_workflow() -> None:
     architecture = read("ARCHITECTURE.md")
+    agents_root = read("AGENTS.md")
     agents = read("docs/agents/README.md")
     acceptance = read("docs/engineering/acceptance-criteria.md")
 
     assert "docs/security/security-advisories-workflow.md" in architecture
     assert "GitHub Security Advisories" in architecture
+    assert "docs/security/security-advisories-workflow.md" in agents_root
+    assert "GitHub Security Advisories" in agents_root
     assert "docs/security/security-advisories-workflow.md" in agents
     assert "docs/security/security-advisories-workflow.md" in acceptance

@@ -67,10 +67,6 @@ Before tagging:
 - If this release includes a security fix:
   - verify Draft advisory metadata includes affected/fixed versions,
   - prepare release references (tag, PR/commit) for advisory publication.
-- After release publication, publish the advisory and verify the fixed version
-  metadata matches the released artifact version.
-- Update release notes / `CHANGELOG.md` with a security-fix entry that
-  references advisory ID (GHSA/CVE when available) and fixed version.
 
 ## Create a release
 
@@ -90,6 +86,15 @@ Before tagging:
 4. Confirm the GitHub branch protection for `main` still requires the
    CI checks above and at least one approving PR review before merging
    any last-minute fixes.
+
+## Post-release security advisory publication
+
+After release publication:
+
+- Publish the advisory and verify the fixed version metadata matches the
+  released artifact version.
+- Update release notes / `CHANGELOG.md` with a security-fix entry that
+  references advisory ID (GHSA/CVE when available) and fixed version.
 
 You can also run `release.yml` manually with `workflow_dispatch` by
 passing an existing tag (for example, `v0.1.1`).
