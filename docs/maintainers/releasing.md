@@ -5,6 +5,12 @@
 - `main` is green in CI.
 - README, changelog, and version metadata are up to date.
 - The release commit is already merged into `main`.
+- Dependency exception governance is clean:
+  - each active entry in
+    `docs/security/dependency-vulnerability-exceptions.md` is still
+    unpatchable upstream,
+  - any advisory resolved via dependency upgrade has been moved to
+    `Resolved exception entries` in the same change set as the upgrade.
 
 ## Local verification
 
@@ -37,6 +43,16 @@ Branch protection / merge policy:
 - Follow Semantic Versioning.
 - Update `pyproject.toml` version.
 - Move relevant `CHANGELOG.md` items from `Unreleased` into the new version section.
+
+## Dependency-exception release gate
+
+Before tagging:
+
+- Review `docs/security/dependency-vulnerability-exceptions.md`.
+- Confirm no advisory remains in `Active exception entries` if `uv.lock`
+  already contains a patched version for that advisory path.
+- If such an advisory exists, stop release prep and update the dependency and
+  exception register first.
 
 ## Create a release
 
