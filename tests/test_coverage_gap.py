@@ -1,5 +1,3 @@
-import pytest
-import json
 from pathlib import Path
 from vector_topic_modeling.ingestion import (
     _coerce_count,
@@ -11,6 +9,13 @@ from vector_topic_modeling.ingestion import (
     TopicDocumentIngestionConfig,
     load_jsonl_topic_documents,
     _resolve_session_id,
+)
+from vector_topic_modeling.sessioning import (
+    pick_session_main_digest,
+    build_digest_counts_all_pairs,
+    aggregate_session_topic_counts,
+    pick_sample_sessions_for_topics,
+    build_digest_counts_session_main_pair,
 )
 
 
@@ -89,15 +94,6 @@ def test_resolve_text_qa_pair():
     text = _resolve_text(row={}, question="Q?", response="A!", config=config)
     assert "Q?" in text
     assert "A!" in text
-
-
-from vector_topic_modeling.sessioning import (
-    pick_session_main_digest,
-    build_digest_counts_all_pairs,
-    aggregate_session_topic_counts,
-    pick_sample_sessions_for_topics,
-    build_digest_counts_session_main_pair,
-)
 
 
 def test_pick_session_main_digest_selector_exception():

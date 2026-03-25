@@ -1,4 +1,3 @@
-import pytest
 from vector_topic_modeling.clustering import (
     _top_share_in_prefix,
     _cluster_stats,

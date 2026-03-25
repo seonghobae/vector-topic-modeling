@@ -41,8 +41,22 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def validate_args(parser: argparse.ArgumentParser, args: argparse.Namespace) -> None:
+    if args.command == "cluster":
+        if args.min_topics < 1:
+            parser.error("--min-topics must be >= 1")
+        if args.min_topics > args.max_topics:
+            parser.error("--min-topics must be <= --max-topics")
+        if not (0 < args.max_top_share <= 1):
+            parser.error("--max-top-share must be in (0, 1]")
+        if args.display_limit < 0:
+            parser.error("--display-limit must be >= 0")
+
+
 def main(argv: list[str] | None = None) -> int:
-    args = build_parser().parse_args(argv)
+    parser = build_parser()
+    args = parser.parse_args(argv)
+    validate_args(parser, args)
     if args.command != "cluster":
         raise ValueError(f"Unsupported command: {args.command}")
     if not args.base_url or not args.api_key:

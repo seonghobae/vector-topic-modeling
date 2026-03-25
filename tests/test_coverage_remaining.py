@@ -1,6 +1,4 @@
 import pytest
-from pathlib import Path
-import json
 import argparse
 from unittest.mock import patch
 
@@ -23,7 +21,13 @@ def test_cli_errors():
     # To test line 42, we bypass argparse
     with patch("vector_topic_modeling.cli.build_parser") as mock_parser:
         mock_args = argparse.Namespace(
-            command="invalid", base_url="test", api_key="test"
+            command="invalid",
+            base_url="test",
+            api_key="test",
+            min_topics=2,
+            max_topics=30,
+            max_top_share=0.35,
+            display_limit=30,
         )
         mock_parser.return_value.parse_args.return_value = mock_args
         with pytest.raises(ValueError, match="Unsupported command: invalid"):
@@ -31,12 +35,68 @@ def test_cli_errors():
 
     # To test line 44, we missing base-url and api-key
     with patch("vector_topic_modeling.cli.build_parser") as mock_parser:
-        mock_args = argparse.Namespace(command="cluster", base_url="", api_key="")
+        mock_args = argparse.Namespace(
+            command="cluster",
+            base_url="",
+            api_key="",
+            min_topics=2,
+            max_topics=30,
+            max_top_share=0.35,
+            display_limit=30,
+        )
         mock_parser.return_value.parse_args.return_value = mock_args
         with pytest.raises(
             ValueError, match="cluster requires --base-url and --api-key"
         ):
             main(["cluster"])
+
+    # Test validation boundaries
+    with patch("vector_topic_modeling.cli.build_parser") as mock_parser:
+        mock_parser_instance = mock_parser.return_value
+
+        def check_error(args_dict, expected_error, match_str):
+            mock_parser_instance.parse_args.return_value = argparse.Namespace(
+                **args_dict
+            )
+            mock_parser_instance.error.side_effect = SystemExit(expected_error)
+            with pytest.raises(SystemExit, match=match_str):
+                main(["cluster"])
+
+        base_args = {
+            "command": "cluster",
+            "base_url": "test",
+            "api_key": "test",
+            "min_topics": 2,
+            "max_topics": 30,
+            "max_top_share": 0.35,
+            "display_limit": 30,
+        }
+
+        check_error(
+            {**base_args, "min_topics": 0},
+            "--min-topics must be >= 1",
+            "--min-topics must be >= 1",
+        )
+        check_error(
+            {**base_args, "min_topics": 10, "max_topics": 5},
+            "--min-topics must be <= --max-topics",
+            "--min-topics must be <= --max-topics",
+        )
+        check_error(
+            {**base_args, "max_top_share": 0},
+            "--max-top-share must be in (0, 1]",
+            r"--max-top-share must be in \(0, 1\]",
+        )
+        check_error(
+            {**base_args, "max_top_share": 1.1},
+            "--max-top-share must be in (0, 1]",
+            r"--max-top-share must be in \(0, 1\]",
+        )
+        check_error(
+            {**base_args, "display_limit": -1},
+            "--display-limit must be >= 0",
+            "--display-limit must be >= 0",
+        )
 
 
 def test_pipeline_unassigned():
