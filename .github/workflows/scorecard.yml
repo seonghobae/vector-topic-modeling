@@ -14,6 +14,10 @@ jobs:
   analysis:
     name: Scorecard analysis
     runs-on: ubuntu-latest
+    timeout-minutes: 30
+    concurrency:
+      group: scorecard-analysis-${{ github.ref }}
+      cancel-in-progress: true
     permissions:
       security-events: write
       id-token: write
