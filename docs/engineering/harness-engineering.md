@@ -10,6 +10,11 @@
   installed-wheel import and console-script paths.
 - Keep tests deterministic and network-free unless explicitly testing the
   provider adapter.
-- `.github/workflows/ci.yml` and `.github/workflows/publish.yml` are the
-  canonical hosted verification paths and must remain aligned with these
-  local commands.
+- `.github/workflows/ci.yml` is the canonical pre-merge verification path
+  for pull requests.
+- `.github/workflows/release.yml` is the canonical tag/manual release
+  verification path for GitHub Release artifact creation.
+- `.github/workflows/publish.yml` is the canonical release-to-PyPI path
+  triggered by `release.published`.
+- Branch protection on `main` requires pull-request-only merges, one
+  approving review, and all required checks passing before merge.

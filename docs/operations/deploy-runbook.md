@@ -38,7 +38,9 @@ shipped `vector-topic-modeling` console script help paths.
   verifies the release gate, and creates GitHub Releases with artifacts.
 - `.github/workflows/publish.yml` publishes on GitHub Release events
   when `PYPI_API_TOKEN` is configured.
-- `main` branch protection must require `workflow-lint`,
-  `test-and-build (3.11)`, and `test-and-build (3.12)` before merge.
+- `main` branch protection enforces pull-request-only merges with at
+  least one approving review.
+- `main` required checks are `workflow-lint`, `test-and-build (3.11)`,
+  and `test-and-build (3.12)` before merge.
 - No long-running deploy queue or runtime service exists; package build
   artifacts are the deployable output.
