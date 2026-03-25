@@ -11,6 +11,7 @@ Standalone embedding-based topic modeling software for vector workflows.
 - dependency-light clustering kernel
 - session-aware representative selection
 - safe text shaping/redaction for embedding input
+- generic ingestion for DB column-value rows and JSON payloads
 - provider-driven `TopicModeler` API
 - JSONL-oriented CLI for standalone runs
 
@@ -82,13 +83,24 @@ See [`examples/`](./examples/) for end-to-end local usage samples.
 Detailed usage and troubleshooting guidance is in
 [`docs/user-manual.md`](./docs/user-manual.md).
 
-## JSONL CLI input shape
+## JSONL CLI input shapes
 
-Each line should be a JSON object containing at least:
+### Legacy flat shape
+
+Each line can contain:
 
 ```json
 {"id":"1","text":"refund duplicate billing","session_id":"s1","question":"...","response":"...","count":1}
 ```
+
+### Generic DB / JSON payload shape
+
+You can also pass arbitrary rows (DB-export style columns or nested JSON payloads)
+and map them with `--ingestion-config`.
+
+Example config: [`examples/ingestion_config_db_columns.json`](./examples/ingestion_config_db_columns.json)
+
+Example rows: [`examples/sample_db_rows.jsonl`](./examples/sample_db_rows.jsonl)
 
 Run the CLI with an OpenAI-compatible embedding endpoint:
 
@@ -100,9 +112,21 @@ vector-topic-modeling cluster input.jsonl \
   --model text-embedding-3-large
 ```
 
+With generic ingestion mapping:
+
+```bash
+vector-topic-modeling cluster examples/sample_db_rows.jsonl \
+  --output topics.json \
+  --ingestion-config examples/ingestion_config_db_columns.json \
+  --base-url https://your-gateway.example.com \
+  --api-key "$LITELLM_API_KEY" \
+  --model text-embedding-3-large
+```
+
 Sample files:
 
 - [`examples/sample_queries.jsonl`](./examples/sample_queries.jsonl)
+- [`examples/sample_db_rows.jsonl`](./examples/sample_db_rows.jsonl)
 - [`examples/cli_openai_compat.sh`](./examples/cli_openai_compat.sh)
 - [`examples/basic_in_memory_provider.py`](./examples/basic_in_memory_provider.py)
 
