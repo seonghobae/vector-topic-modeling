@@ -2,6 +2,7 @@
 """
 Fuzzing harness for PII and secrets redaction module.
 """
+
 import sys
 import atheris
 
@@ -9,7 +10,7 @@ with atheris.instrument_imports():
     from vector_topic_modeling._sanitize import redact_pii_and_secrets
 
 
-def TestOneInput(data):
+def TestOneInput(data: bytes):
     """
     Fuzzing entry point for testing redact_pii_and_secrets with arbitrary strings.
     """
