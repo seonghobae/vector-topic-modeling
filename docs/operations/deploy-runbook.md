@@ -37,7 +37,7 @@ shipped `vector-topic-modeling` console script help paths.
 - `.github/workflows/release.yml` runs on `v*` tags (and manual dispatch),
   verifies the release gate, and creates GitHub Releases with artifacts.
 - `.github/workflows/publish.yml` publishes on GitHub Release events
-  when `PYPI_API_TOKEN` is configured.
+  using PyPI Trusted Publishing (OIDC).
 - `main` branch protection enforces pull-request-only merges with at
   least one approving review.
 - `main` required checks are `workflow-lint`, `test-and-build (3.11)`,

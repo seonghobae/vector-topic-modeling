@@ -74,6 +74,13 @@ Before tagging:
 
 ## Create a release
 
+**Prerequisite for PyPI Trusted Publishing:**
+Before your first automated release, configure a Trusted Publisher in PyPI:
+1. Log in to PyPI and go to your project's **Publishing** settings.
+2. Add a new publisher using GitHub.
+3. Set the owner (`seonghobae`), repository (`vector-topic-modeling`), and workflow name (`publish.yml`).
+4. Set the environment name to `pypi` to match the environment used in the workflow.
+
 1. Create and push a `v`-prefixed tag:
 
    ```bash
@@ -86,7 +93,7 @@ Before tagging:
 2. The `release.yml` workflow verifies tests/build/smoke and creates a
    GitHub Release with artifacts from that tag.
 3. The `publish.yml` workflow then runs on `release.published` and
-   publishes to PyPI when `PYPI_API_TOKEN` is configured.
+   publishes to PyPI using PyPI Trusted Publishing (OIDC).
 4. Confirm the GitHub branch protection for `main` still requires the
    CI checks above and at least one approving PR review before merging
    any last-minute fixes.

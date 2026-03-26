@@ -225,7 +225,7 @@ uv run python scripts/smoke_installed_cli.py --dist-dir dist --venv-dir .venv-sm
 2. `.github/workflows/release.yml` verifies tests/build/smoke and creates a
    GitHub Release with built artifacts.
 3. `.github/workflows/publish.yml` then runs on `release.published` and uploads
-   to PyPI when `PYPI_API_TOKEN` is configured.
+   to PyPI using PyPI Trusted Publishing (OIDC).
 
 ### 6.3 Manual release trigger
 
@@ -292,7 +292,6 @@ sequenceDiagram
     GH->>P: Trigger publish workflow
     P->>P: uv sync --extra dev
     P->>P: Re-run pytest + build + smoke gate
-    P->>P: Require PYPI_API_TOKEN
-    P->>PY: twine upload dist/*
+    P->>PY: pypa/gh-action-pypi-publish (dist/*)
     PY-->>M: New package version available
 ```
