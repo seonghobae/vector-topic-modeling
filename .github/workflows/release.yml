@@ -71,6 +71,13 @@ jobs:
         with:
           subject-path: dist/*
 
+      - name: Verify build provenance
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh attestation verify dist/*.whl --owner ${{ github.repository_owner }}
+          gh attestation verify dist/*.tar.gz --owner ${{ github.repository_owner }}
+
       - name: Create or update GitHub release with artifacts
         env:
           GH_TOKEN: ${{ github.token }}
