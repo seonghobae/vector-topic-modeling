@@ -14,4 +14,4 @@ task_agent_mapping.json
 .coverage*
 topics.json
 topics_test.json
-examples/*.jsonl
+examples/*.generated.jsonl
