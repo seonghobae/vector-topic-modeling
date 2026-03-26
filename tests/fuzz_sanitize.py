@@ -4,7 +4,7 @@ Fuzzing harness for PII and secrets redaction module.
 """
 
 import sys
-import atheris
+import atheris  # type: ignore[import-not-found]
 
 with atheris.instrument_imports():
     from vector_topic_modeling._sanitize import redact_pii_and_secrets
