@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import vector_topic_modeling.pipeline as pipeline_module
 from vector_topic_modeling.pipeline import (
     TopicDocument,
     TopicModelConfig,
@@ -182,7 +181,9 @@ def test_fit_predict_allows_sessions_without_selected_representative(
             return None
         return str(session_rows[0]["digest_hex"])
 
-    monkeypatch.setattr(pipeline_module, "pick_session_main_digest", _pick_or_none)
+    monkeypatch.setattr(
+        "vector_topic_modeling.pipeline.pick_session_main_digest", _pick_or_none
+    )
 
     modeler = TopicModeler(
         embedding_provider=provider,
