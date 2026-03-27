@@ -22,6 +22,8 @@ from vector_topic_modeling.text import normalize_text
 
 
 class PreparedRow(TypedDict):
+    """Normalized row payload consumed by clustering and aggregation helpers."""
+
     document_id: str
     session_id: str
     question: str
@@ -33,6 +35,8 @@ class PreparedRow(TypedDict):
 
 @dataclass(frozen=True)
 class TopicDocument:
+    """Input document record for topic-model inference."""
+
     id: str
     text: str
     session_id: str | None = None
@@ -44,6 +48,8 @@ class TopicDocument:
 
 @dataclass(frozen=True)
 class TopicModelConfig:
+    """Runtime configuration knobs for topic modeling behavior."""
+
     similarity_threshold: float = 0.85
     min_topics: int = 2
     max_topics: int = 30
@@ -55,6 +61,8 @@ class TopicModelConfig:
 
 @dataclass(frozen=True)
 class TopicAssignment:
+    """Per-document mapping from digest to resolved topic id."""
+
     document_id: str
     topic_id: str
     digest_hex: str
@@ -62,6 +70,8 @@ class TopicAssignment:
 
 @dataclass(frozen=True)
 class Topic:
+    """Aggregated topic output for one discovered cluster."""
+
     topic_id: str
     total_count: int
     texts: list[str]
@@ -69,6 +79,8 @@ class Topic:
 
 @dataclass(frozen=True)
 class TopicModelResult:
+    """Complete topic-model output including topics, assignments, and lookups."""
+
     topics: list[Topic]
     assignments: list[TopicAssignment]
     session_topic_counts: dict[tuple[str, str], int]
@@ -76,16 +88,20 @@ class TopicModelResult:
 
 
 class TopicModeler:
+    """Coordinate embedding, clustering, and assignment for topic modeling."""
+
     def __init__(
         self,
         *,
         embedding_provider: EmbeddingProvider,
         config: TopicModelConfig | None = None,
     ) -> None:
+        """Initialize the modeler with an embedding provider and config."""
         self.embedding_provider = embedding_provider
         self.config = config or TopicModelConfig()
 
     def fit_predict(self, documents: list[TopicDocument]) -> TopicModelResult:
+        """Fit topics over input documents and return topic-level outputs."""
         prepared_rows = [self._prepare_row(document) for document in documents]
         digest_counts = self._build_digest_counts(prepared_rows)
         session_representatives = self._build_session_representatives(prepared_rows)
@@ -160,6 +176,7 @@ class TopicModeler:
         )
 
     def _prepare_row(self, document: TopicDocument) -> PreparedRow:
+        """Normalize one document into a digest-addressed prepared row."""
         text = normalize_text(document.text)
         digest_hex = hashlib.sha256(text.encode("utf-8")).hexdigest()
         return {
@@ -173,6 +190,7 @@ class TopicModeler:
         }
 
     def _build_digest_counts(self, rows: list[PreparedRow]) -> dict[str, int]:
+        """Build digest frequency counts using configured session strategy."""
         if self.config.use_session_representatives:
             with_session = [row for row in rows if row["session_id"]]
             without_session = [row for row in rows if not row["session_id"]]
@@ -185,6 +203,7 @@ class TopicModeler:
         return build_digest_counts_all_pairs(rows)
 
     def _build_session_representatives(self, rows: list[PreparedRow]) -> dict[str, str]:
+        """Pick one representative digest per session when enabled."""
         if not self.config.use_session_representatives:
             return {}
         by_session: dict[str, list[PreparedRow]] = {}
@@ -206,6 +225,7 @@ class TopicModeler:
         digest_to_topic: dict[str, str],
         session_representatives: dict[str, str],
     ) -> str:
+        """Resolve a row topic by digest, then by session representative fallback."""
         digest_hex = str(row["digest_hex"])
         topic_id = digest_to_topic.get(digest_hex)
         if topic_id:
@@ -223,6 +243,7 @@ class TopicModeler:
         digest_to_topic: dict[str, str],
         session_representatives: dict[str, str],
     ) -> dict[tuple[str, str], int]:
+        """Aggregate per-session counts keyed by resolved topic id."""
         out: dict[tuple[str, str], int] = {}
         for row in rows:
             session_id = row["session_id"]
@@ -241,6 +262,7 @@ class TopicModeler:
         return out
 
     def _topic_id_for_cluster(self, cluster: Cluster, rows: list[PreparedRow]) -> str:
+        """Derive a stable topic id for a cluster from sampled row digests."""
         sample_sha = [
             str(row["digest_hex"])
             for row in rows

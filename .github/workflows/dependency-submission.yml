@@ -1,0 +1,27 @@
+name: dependency-submission
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  submit-dependency-snapshot:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Submit dependency snapshot (pip + uv lock)
+        uses: advanced-security/component-detection-dependency-submission-action@9c110eb34dee187cd9eca76a652b9f6a0ed22927 # v0.1.1
+        with:
+          detectorArgs: Pip=EnableIfDefaultOff,SimplePip=EnableIfDefaultOff,UvLock=EnableIfDefaultOff

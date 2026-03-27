@@ -6,5 +6,7 @@ from typing import Protocol
 
 
 class EmbeddingProvider(Protocol):
+    """Protocol for components that map text inputs to embedding vectors."""
+
     def embed(self, texts: list[str]) -> list[list[float]]:
         """Return an embedding vector per input text."""

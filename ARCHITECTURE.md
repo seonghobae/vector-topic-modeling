@@ -1,6 +1,6 @@
 # Architecture Overview
 
-Last updated: 2026-03-25
+Last updated: 2026-03-27
 
 ## Project structure
 
@@ -55,12 +55,21 @@ database storage, background jobs, XLSX export, and email delivery.
 - `codeql.yml` performs CodeQL static analysis for Python on every push
   and PR (plus a weekly schedule) and uploads findings to GitHub Security.
 - `dependency-review.yml` reviews dependency changes in each PR and
-  fails on high-severity known vulnerabilities.
+  fails on moderate-severity (or above) known vulnerabilities.
+- `dependency-submission.yml` submits dependency snapshots for `pip` and
+  `uv.lock` inputs so Dependency Review can consume PR-head dependency
+  metadata consistently.
 - `.github/dependabot.yml` is the canonical dependency-update automation
   baseline for `pip` and `github-actions` ecosystems.
 - `main` branch protection requires `workflow-lint`,
-  `test-and-build (3.11)`, and `test-and-build (3.12)` so releases
-  cannot bypass CI evidence.
+  `test-and-build (3.11)`, `test-and-build (3.12)`, and
+  `dependency-review` so releases cannot bypass CI evidence.
+- `pytest` is configured with `--cov=vector_topic_modeling --cov-branch`
+  and `--cov-fail-under=100`, enforcing 100% line+branch coverage for
+  product code in `src/vector_topic_modeling`.
+- `scripts/docstring_coverage.py` reports and enforces 100% AST-level
+  docstring coverage for module/class/function symbols in
+  `src/vector_topic_modeling`.
 - Vulnerability dismissals that lack an upstream patch must be recorded in
   `docs/security/dependency-vulnerability-exceptions.md`, re-evaluated on
   advisory/dependency/release changes, and moved from Active to Resolved when

@@ -8,7 +8,8 @@ version = "0.1.0"
 description = "Standalone embedding-based topic modeling for vector analysis"
 readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "MIT" }
+license = "MIT"
+license-files = ["LICENSE"]
 authors = [
   { name = "Seongho Bae" }
 ]
@@ -71,7 +72,7 @@ include = [
 [tool.pytest.ini_options]
 pythonpath = ["src"]
 testpaths = ["tests"]
-addopts = "-q"
+addopts = "-q --cov=vector_topic_modeling --cov-branch --cov-report=term-missing --cov-fail-under=100"
 
 [tool.mypy]
 python_version = "3.11"
@@ -80,5 +81,3 @@ show_error_codes = true
 [[tool.mypy.overrides]]
 module = ["pytest"]
 ignore_missing_imports = true
-
-

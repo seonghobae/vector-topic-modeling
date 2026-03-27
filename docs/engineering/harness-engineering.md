@@ -1,6 +1,10 @@
 # Harness Engineering
 
 - Use `uv run pytest -q` for verification.
+  - `pyproject.toml` enforces `--cov=vector_topic_modeling --cov-branch`
+    and `--cov-fail-under=100`.
+- Use `uv run python scripts/docstring_coverage.py --min-percent 100`
+  to verify product docstring coverage is 100%.
 - Before build/smoke checks, remove previous artifacts:
   - POSIX shell: `rm -rf dist .venv-smoke-cli`
   - PowerShell: `Remove-Item -Recurse -Force dist, .venv-smoke-cli`
@@ -10,11 +14,24 @@
   installed-wheel import and console-script paths.
 - Keep tests deterministic and network-free unless explicitly testing the
   provider adapter.
+- Coverage policy: 100% line + 100% branch for `src/vector_topic_modeling`.
+- Docstring policy: 100% AST-level module/class/function docstring coverage
+  for `src/vector_topic_modeling`.
 - `.github/workflows/ci.yml` is the canonical pre-merge verification path
   for pull requests.
 - `.github/workflows/release.yml` is the canonical tag/manual release
   verification path for GitHub Release artifact creation.
 - `.github/workflows/publish.yml` is the canonical release-to-PyPI path
   triggered by `release.published`.
+- Use `uv run python scripts/review_checks/dependency_review_warning_gate.py`
+  for pull-request dependency-warning triage and issue closure verification.
+  - Required args: `--owner`, `--repo`, `--pr`
+  - Policy args: `--max-unknown-licenses` and optional
+    `--allow-snapshot-warning`
+- Use `uv run python scripts/review_checks/pr_check_gate_classifier.py`
+  to classify PR check contexts into required blockers vs optional external
+  status noise (for example stale CodeRabbit contexts).
+  - Input: JSON array from `gh pr checks <pr> --json name,state,completedAt`
+  - Output: `gate=PASS|FAIL` summary with required/optional buckets
 - Branch protection on `main` requires pull-request-only merges, one
   approving review, and all required checks passing before merge.

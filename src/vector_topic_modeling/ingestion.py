@@ -14,6 +14,8 @@ from vector_topic_modeling.text import build_qa_pair_text, normalize_text
 
 @dataclass(frozen=True)
 class TopicDocumentIngestionConfig:
+    """Configurable field mapping rules for converting source rows to documents."""
+
     id_fields: tuple[str, ...] = ("id", "document_id")
     text_fields: tuple[str, ...] = ("text",)
     payload_fields: tuple[str, ...] = ("payload", "json_payload", "body")
@@ -30,6 +32,7 @@ class TopicDocumentIngestionConfig:
 
 
 def load_ingestion_config(path: str | Path | None) -> TopicDocumentIngestionConfig:
+    """Load ingestion mapping config from JSON, or defaults when omitted."""
     if path is None:
         return TopicDocumentIngestionConfig()
     parsed = json.loads(Path(path).read_text(encoding="utf-8"))
@@ -70,6 +73,7 @@ def load_jsonl_topic_documents(
     *,
     config: TopicDocumentIngestionConfig | None = None,
 ) -> list[TopicDocument]:
+    """Parse a JSONL file and map each object row into a topic document."""
     effective = config or TopicDocumentIngestionConfig()
     documents: list[TopicDocument] = []
     for raw_line in path.read_text(encoding="utf-8").splitlines():
@@ -91,6 +95,7 @@ def topic_document_from_row(
     row_index: int,
     config: TopicDocumentIngestionConfig | None = None,
 ) -> TopicDocument:
+    """Convert one generic mapping row into a normalized ``TopicDocument``."""
     effective = config or TopicDocumentIngestionConfig()
     materialized = _materialize_column_value_fields(row=row, config=effective)
     question = _first_non_empty(materialized, effective.question_fields)
@@ -123,6 +128,7 @@ def _resolve_document_id(
     row_index: int,
     config: TopicDocumentIngestionConfig,
 ) -> str:
+    """Resolve document id from configured fields or fallback to row index."""
     explicit = _first_non_empty(row, config.id_fields)
     return explicit if explicit else str(row_index)
 
@@ -132,6 +138,7 @@ def _resolve_session_id(
     *,
     config: TopicDocumentIngestionConfig,
 ) -> str | None:
+    """Resolve a session id directly or synthesize one from key fields."""
     explicit = _first_non_empty(row, config.session_id_fields)
     if explicit:
         return explicit
@@ -158,6 +165,7 @@ def _resolve_text(
     response: str,
     config: TopicDocumentIngestionConfig,
 ) -> str:
+    """Resolve model text using direct text, field bundles, payload, or QA fallback."""
     direct_text = _first_non_empty(row, config.text_fields)
     if direct_text:
         return normalize_text(direct_text, max_chars=config.max_text_chars)
@@ -190,6 +198,7 @@ def _materialize_column_value_fields(
     row: Mapping[str, object],
     config: TopicDocumentIngestionConfig,
 ) -> dict[str, object]:
+    """Promote nested column/value records into top-level row fields."""
     out = dict(row)
     source_key = config.column_value_path
     if not source_key:
@@ -208,6 +217,7 @@ def _materialize_column_value_fields(
 
 
 def _first_non_empty(row: Mapping[str, object], fields: tuple[str, ...]) -> str:
+    """Return first non-empty rendered value from candidate fields."""
     for field in fields:
         rendered = _stringify(row.get(field)).strip()
         if rendered:
@@ -216,6 +226,7 @@ def _first_non_empty(row: Mapping[str, object], fields: tuple[str, ...]) -> str:
 
 
 def _coerce_count(value: Any, *, default: int) -> int:
+    """Coerce a count-like input to ``int`` with safe fallback."""
     if isinstance(value, bool):
         return default
     if isinstance(value, int):
@@ -231,6 +242,7 @@ def _coerce_count(value: Any, *, default: int) -> int:
 
 
 def _stringify(value: object) -> str:
+    """Render structured values into deterministic string form."""
     if value is None:
         return ""
     if isinstance(value, str):
@@ -243,6 +255,7 @@ def _stringify(value: object) -> str:
 
 
 def _to_field_tuple(value: object, *, fallback: tuple[str, ...]) -> tuple[str, ...]:
+    """Normalize configured field names into a non-empty tuple."""
     if value is None:
         return fallback
     if isinstance(value, str):
@@ -255,6 +268,7 @@ def _to_field_tuple(value: object, *, fallback: tuple[str, ...]) -> tuple[str, .
 
 
 def _opt_text(value: object) -> str | None:
+    """Normalize optional config text and return ``None`` when blank."""
     if value is None:
         return None
     text = str(value).strip()

@@ -8,6 +8,7 @@ wheels/sdists as the deployable output.
 ```bash
 uv sync --extra dev
 uv run pytest -q
+uv run python scripts/docstring_coverage.py --min-percent 100
 # Delete any previous build artifacts and smoke-test virtual environment.
 # On POSIX shells: rm -rf dist .venv-smoke-cli
 # On Windows PowerShell: Remove-Item -Recurse -Force dist, .venv-smoke-cli
@@ -41,7 +42,7 @@ shipped `vector-topic-modeling` console script help paths.
 - `main` branch protection enforces pull-request-only merges with at
   least one approving review.
 - `main` required checks are `workflow-lint`, `test-and-build (3.11)`,
-  and `test-and-build (3.12)` before merge.
+  `test-and-build (3.12)`, and `dependency-review` before merge.
 - No long-running deploy queue or runtime service exists; package build
   artifacts are the deployable output.
 

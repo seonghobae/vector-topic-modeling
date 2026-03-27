@@ -9,7 +9,8 @@ import json
 from typing import TypedDict
 
 
-def _top_share_in_prefix(clusters: list["Cluster"], *, limit: int) -> tuple[int, float]:
+def _top_share_in_prefix(clusters: list[Cluster], *, limit: int) -> tuple[int, float]:
+    """Return total count and dominant-share among the first ``limit`` clusters."""
     n = max(int(limit), 0)
     prefix = clusters[:n] if n else []
     counts = [max(int(cluster.total_count), 0) for cluster in prefix]
@@ -19,12 +20,14 @@ def _top_share_in_prefix(clusters: list["Cluster"], *, limit: int) -> tuple[int,
     return total, float(max(counts) / total)
 
 
-def _stable_cluster_sort_key(cluster: "Cluster") -> tuple[int, str]:
+def _stable_cluster_sort_key(cluster: Cluster) -> tuple[int, str]:
+    """Build a deterministic sort key by size then lexical tie-break."""
     tie = min((str(text) for text in cluster.texts), default="")
     return (-int(cluster.total_count), tie)
 
 
-def _cluster_stats(clusters: list["Cluster"]) -> tuple[int, float]:
+def _cluster_stats(clusters: list[Cluster]) -> tuple[int, float]:
+    """Compute cluster count and global share of the largest cluster."""
     if not clusters:
         return 0, 0.0
     counts = [max(int(cluster.total_count), 0) for cluster in clusters]
@@ -35,6 +38,7 @@ def _cluster_stats(clusters: list["Cluster"]) -> tuple[int, float]:
 
 
 def cosine_similarity(a: list[float], b: list[float]) -> float:
+    """Compute cosine similarity for two equal-length vectors."""
     if not a or not b or len(a) != len(b):
         return 0.0
     dot = 0.0
@@ -51,12 +55,16 @@ def cosine_similarity(a: list[float], b: list[float]) -> float:
 
 @dataclass(frozen=True)
 class Cluster:
+    """A clustered group of texts with centroid and aggregate count."""
+
     centroid: list[float]
     texts: list[str]
     total_count: int
 
 
 class AdaptiveGreedyClusterResult(TypedDict):
+    """Result payload for adaptive greedy clustering."""
+
     clusters: list[Cluster]
     chosen_threshold: float
     cluster_count: int
@@ -65,6 +73,8 @@ class AdaptiveGreedyClusterResult(TypedDict):
 
 
 class RescueDisplayDominanceResult(TypedDict):
+    """Result payload for dominance-rescue post-processing."""
+
     clusters: list[Cluster]
     rescued: bool
     attempts: int
@@ -80,6 +90,7 @@ class RescueDisplayDominanceResult(TypedDict):
 def _avg_vectors(
     *, prev_centroid: list[float], new_vector: list[float], prev_weight: float
 ) -> list[float]:
+    """Update a centroid with one additional vector using weighted averaging."""
     if not prev_centroid:
         return list(new_vector)
     if len(prev_centroid) != len(new_vector):
@@ -98,6 +109,7 @@ def greedy_cluster(
     similarity_threshold: float,
     max_clusters: int | None = None,
 ) -> list[Cluster]:
+    """Cluster texts greedily by first centroid crossing the similarity threshold."""
     threshold = min(max(float(similarity_threshold), 0.0), 1.0)
     centroids: list[list[float]] = []
     members: list[list[str]] = []
@@ -152,6 +164,7 @@ def adaptive_greedy_cluster(
     step: float = 0.02,
     tries: int = 6,
 ) -> AdaptiveGreedyClusterResult:
+    """Search thresholds to satisfy topic-count and top-share constraints."""
     threshold = float(initial_threshold)
     max_share = float(max_top_share)
     min_k = max(int(min_clusters), 1)
@@ -212,6 +225,7 @@ def rescue_display_dominance(
     step: float = 0.02,
     tries: int = 6,
 ) -> RescueDisplayDominanceResult:
+    """Split a dominant first cluster to reduce top-share in display prefix."""
     in_clusters = list(clusters or [])
     in_clusters.sort(key=_stable_cluster_sort_key)
     cluster_count_before, top_share_before = _cluster_stats(in_clusters)
@@ -284,6 +298,7 @@ def rescue_display_dominance(
 def stable_topic_id(
     *, sample_sha256_hex: list[str], embedding_model: str, similarity_threshold: float
 ) -> str:
+    """Derive a deterministic short topic identifier from stable cluster metadata."""
     payload = {
         "v": 1,
         "sample_sha256": list(sample_sha256_hex),
@@ -300,6 +315,7 @@ def match_clusters_by_centroid(
     previous_clusters: list[Cluster],
     match_threshold: float,
 ) -> dict[int, int]:
+    """Greedily match current clusters to previous clusters by centroid similarity."""
     threshold = min(max(float(match_threshold), 0.0), 1.0)
     pairs: list[tuple[float, int, int]] = []
     for i, current in enumerate(current_clusters):

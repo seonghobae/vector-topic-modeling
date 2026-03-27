@@ -44,6 +44,10 @@ jobs:
       - name: Run tests
         run: uv run pytest -q
 
+      - name: Report and verify docstring coverage
+        if: matrix.python-version == '3.11'
+        run: uv run python scripts/docstring_coverage.py --min-percent 100
+
       - name: Remove stale build artifacts
         run: rm -rf dist .venv-smoke-cli
 

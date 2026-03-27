@@ -14,6 +14,8 @@ from vector_topic_modeling._sanitize import clean_env, strip_nul
 
 @dataclass(frozen=True)
 class OpenAICompatConfig:
+    """Connection settings for an OpenAI-compatible embeddings endpoint."""
+
     base_url: str
     api_key: str
     model: str
@@ -23,6 +25,7 @@ class OpenAICompatConfig:
 def parse_embedding_response_data(
     *, data: list[dict[str, Any]], expected_count: int
 ) -> list[list[float]]:
+    """Validate and reorder embedding response items by their index field."""
     indexed: dict[int, list[float]] = {}
     expected_dim: int | None = None
     for item in data:
@@ -50,7 +53,10 @@ def parse_embedding_response_data(
 
 
 class OpenAICompatEmbeddingProvider:
+    """Embedding provider that calls an OpenAI-compatible HTTP API."""
+
     def __init__(self, config: OpenAICompatConfig) -> None:
+        """Validate and normalize provider configuration."""
         parsed = urlparse(clean_env(config.base_url))
         if parsed.scheme not in {"http", "https"} or not parsed.netloc:
             raise ValueError("base_url must be a valid http(s) URL")
@@ -62,6 +68,7 @@ class OpenAICompatEmbeddingProvider:
         )
 
     def embed(self, texts: list[str]) -> list[list[float]]:
+        """Fetch embeddings for input texts using the configured endpoint."""
         if not texts:
             return []
         payload = json.dumps(

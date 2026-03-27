@@ -117,3 +117,40 @@ def test_build_digest_counts_all_pairs_coerces_count_types_and_clamps() -> None:
         {"digest_hex": "", "count": 123},
     ]
     assert build_digest_counts_all_pairs(rows) == {"a" * 64: 7}
+
+
+def test_build_digest_counts_session_main_pair_skips_empty_choice_and_keeps_best() -> (
+    None
+):
+    s1_rows = [
+        {
+            "session_id": "s1",
+            "digest_hex": "d-best",
+            "question": "long unique tax filing question",
+            "response": "detailed answer",
+        },
+        {
+            "session_id": "s1",
+            "digest_hex": "d-low",
+            "question": "hi",
+            "response": "ok",
+        },
+    ]
+
+    assert pick_session_main_digest(s1_rows) == "d-best"
+
+    all_rows = [
+        {"session_id": "s0", "digest_hex": "", "question": "x", "response": "y"},
+        *s1_rows,
+    ]
+    assert build_digest_counts_session_main_pair(all_rows) == {"d-best": 1}
+
+
+def test_pick_sample_sessions_for_topics_ignores_duplicate_session_ids() -> None:
+    out = pick_sample_sessions_for_topics(
+        {"T1": [("sess-a", 5), ("sess-a", 4), ("sess-b", 3)]},
+        max_per_topic=10,
+        max_total=10,
+    )
+
+    assert out["T1"] == ["sess-a", "sess-b"]
