@@ -23,5 +23,10 @@
   verification path for GitHub Release artifact creation.
 - `.github/workflows/publish.yml` is the canonical release-to-PyPI path
   triggered by `release.published`.
+- Use `uv run python scripts/review_checks/dependency_review_warning_gate.py`
+  for pull-request dependency-warning triage and issue closure verification.
+  - Required args: `--owner`, `--repo`, `--pr`
+  - Policy args: `--max-unknown-licenses` and optional
+    `--allow-snapshot-warning`
 - Branch protection on `main` requires pull-request-only merges, one
   approving review, and all required checks passing before merge.

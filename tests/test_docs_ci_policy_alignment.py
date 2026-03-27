@@ -52,3 +52,6 @@ def test_dependency_submission_workflow_tracks_uv_lock_snapshots() -> None:
         "if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false"
         in workflow
     )
+
+    harness_doc = _read("docs/engineering/harness-engineering.md")
+    assert "dependency_review_warning_gate.py" in harness_doc
