@@ -34,3 +34,10 @@ def test_dependency_review_severity_wording_matches_workflow_setting() -> None:
         content = _read(relpath)
         assert "moderate-severity" in content, relpath
         assert "high-severity known vulnerabilities" not in content, relpath
+
+
+def test_dependency_submission_workflow_tracks_uv_lock_snapshots() -> None:
+    workflow = _read(".github/workflows/dependency-submission.yml")
+
+    assert "component-detection-dependency-submission-action" in workflow
+    assert "UvLock=EnableIfDefaultOff" in workflow

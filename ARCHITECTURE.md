@@ -56,6 +56,9 @@ database storage, background jobs, XLSX export, and email delivery.
   and PR (plus a weekly schedule) and uploads findings to GitHub Security.
 - `dependency-review.yml` reviews dependency changes in each PR and
   fails on moderate-severity (or above) known vulnerabilities.
+- `dependency-submission.yml` submits dependency snapshots for `pip` and
+  `uv.lock` inputs so Dependency Review can consume PR-head dependency
+  metadata consistently.
 - `.github/dependabot.yml` is the canonical dependency-update automation
   baseline for `pip` and `github-actions` ecosystems.
 - `main` branch protection requires `workflow-lint`,
