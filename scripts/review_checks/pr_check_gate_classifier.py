@@ -49,7 +49,7 @@ def parse_pr_checks(payload: str) -> list[ParsedCheck]:
     """Parse JSON check payload and keep latest row per check context name."""
     raw_items = json.loads(payload)
     if not isinstance(raw_items, list):
-        raise ValueError("payload must be a JSON list")
+        raise TypeError("payload must be a JSON list")
 
     latest_by_name: dict[str, ParsedCheck] = {}
     for item in raw_items:
@@ -170,9 +170,7 @@ def main() -> int:
     payload = _read_stdin()
     try:
         checks = parse_pr_checks(payload)
-    except (
-        Exception
-    ) as exc:  # pragma: no cover - covered via tests with ValueError path
+    except (json.JSONDecodeError, ValueError, TypeError) as exc:
         print(f"invalid-input: {exc}")
         return 2
 

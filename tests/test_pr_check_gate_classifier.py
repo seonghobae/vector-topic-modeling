@@ -4,21 +4,32 @@ import importlib.util
 import json
 from pathlib import Path
 import sys
-from types import SimpleNamespace
-from typing import Any
+from types import ModuleType, SimpleNamespace
+from typing import NoReturn
+
+import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SCRIPT_PATH = REPO_ROOT / "scripts" / "review_checks" / "pr_check_gate_classifier.py"
 
 
-def _load_module() -> Any:
+def _load_module() -> ModuleType:
     spec = importlib.util.spec_from_file_location(
         "pr_check_gate_classifier", SCRIPT_PATH
     )
-    assert spec is not None and spec.loader is not None
+    if spec is None:
+        raise RuntimeError(f"Failed to create import spec for: {SCRIPT_PATH}")
+    if spec.loader is None:
+        raise RuntimeError(f"Missing loader for import spec: {SCRIPT_PATH}")
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
-    spec.loader.exec_module(module)
+    try:
+        spec.loader.exec_module(module)
+    except Exception as exc:  # pragma: no cover - defensive guard for loader failures
+        sys.modules.pop(spec.name, None)
+        raise RuntimeError(
+            f"Failed to import module from {SCRIPT_PATH}: {exc}"
+        ) from exc
     return module
 
 
@@ -65,6 +76,13 @@ def test_parse_pr_checks_keeps_latest_row_per_context() -> None:
     assert len(checks) == 1
     assert checks[0].name == "dependency-review"
     assert checks[0].state == "success"
+
+
+def test_parse_pr_checks_raises_type_error_when_payload_decodes_to_non_list() -> None:
+    payload = json.dumps({"name": "workflow-lint", "state": "success"})
+
+    with pytest.raises(TypeError):
+        MODULE.parse_pr_checks(payload)
 
 
 def test_evaluate_checks_required_failure_is_blocker() -> None:
@@ -224,3 +242,24 @@ def test_main_returns_2_when_input_is_not_json(monkeypatch, capsys) -> None:
 
     assert exit_code == 2
     assert "invalid-input" in capsys.readouterr().out
+
+
+def test_main_reraises_unexpected_runtime_error_from_parse_pr_checks(
+    monkeypatch, capsys
+) -> None:
+    monkeypatch.setattr(
+        MODULE,
+        "parse_args",
+        lambda: SimpleNamespace(required_checks="workflow-lint"),
+    )
+    monkeypatch.setattr(MODULE, "_read_stdin", lambda: "[]")
+
+    def _raise_runtime_error(_: str) -> NoReturn:
+        raise RuntimeError("unexpected parse failure")
+
+    monkeypatch.setattr(MODULE, "parse_pr_checks", _raise_runtime_error)
+
+    with pytest.raises(RuntimeError, match="unexpected parse failure"):
+        MODULE.main()
+
+    assert "invalid-input" not in capsys.readouterr().out

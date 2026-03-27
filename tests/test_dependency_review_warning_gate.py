@@ -5,6 +5,7 @@ from pathlib import Path
 import subprocess
 import sys
 from types import ModuleType, SimpleNamespace
+from typing import Any, NoReturn
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SCRIPT_PATH = (
@@ -188,7 +189,8 @@ def test_run_gh_wraps_called_process_error() -> None:
         stderr="boom",
     )
 
-    def _raise(*args, **kwargs):
+    def _raise(*args: Any, **kwargs: Any) -> NoReturn:
+        _ = args, kwargs
         raise exc
 
     original_run = MODULE.subprocess.run

@@ -35,9 +35,8 @@ def test_dependency_review_severity_wording_matches_workflow_setting() -> None:
         content = _read(relpath)
         assert "moderate-severity" in content, relpath
         assert "high-severity known vulnerabilities" not in content, relpath
-
-    api_checklist = _read("docs/security/api-security-checklist.md")
-    assert "comment-summary-in-pr: on-failure" in api_checklist
+        if relpath == "docs/security/api-security-checklist.md":
+            assert "comment-summary-in-pr: on-failure" in content
 
 
 def test_dependency_submission_workflow_tracks_uv_lock_snapshots() -> None:
@@ -63,3 +62,5 @@ def test_ci_runs_docstring_coverage_step_once_for_python_311() -> None:
 
     assert "name: Report and verify docstring coverage" in workflow
     assert "if: matrix.python-version == '3.11'" in workflow
+    assert workflow.count("name: Report and verify docstring coverage") == 1
+    assert workflow.count("if: matrix.python-version == '3.11'") == 1
