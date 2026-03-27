@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+import vector_topic_modeling.pipeline as pipeline_module
 from vector_topic_modeling.pipeline import (
-    PreparedRow,
     TopicDocument,
     TopicModelConfig,
     TopicModeler,
@@ -108,32 +108,87 @@ def test_topic_modeler_session_aware_mode_keeps_sessionless_documents() -> None:
     assert result.assignments[0].topic_id != "unassigned"
 
 
-def test_build_session_representatives_skips_sessions_without_main_digest() -> None:
-    modeler = TopicModeler(
-        embedding_provider=FakeEmbeddingProvider({"v": [1.0, 0.0]}),
-        config=TopicModelConfig(use_session_representatives=True),
-    )
-    rows: list[PreparedRow] = [
-        {
-            "document_id": "0",
-            "session_id": "s-empty",
-            "question": "x",
-            "response": "y",
-            "text": "x y",
-            "digest_hex": "",
-            "count": 1,
-        },
-        {
-            "document_id": "1",
-            "session_id": "s-valid",
-            "question": "long tax filing question 2026",
-            "response": "detailed response with steps",
-            "text": "v",
-            "digest_hex": "d-best",
-            "count": 1,
-        },
+def test_fit_predict_uses_session_representative_for_topic_assignment() -> None:
+    docs = [
+        TopicDocument(
+            id="greeting",
+            text="안녕? 안녕하세요!",
+            session_id="s-valid",
+            question="안녕?",
+            response="안녕하세요!",
+            count=1,
+        ),
+        TopicDocument(
+            id="substantive",
+            text="2026년 2월 법인세 신고 절차 설명",
+            session_id="s-valid",
+            question="2026년 2월 법인세 신고 절차를 단계별로 설명해줘",
+            response="전제 조건과 신고 절차를 단계별로 설명합니다.",
+            count=1,
+        ),
     ]
+    provider = FakeEmbeddingProvider(
+        {
+            "안녕? 안녕하세요!": [1.0, 0.0],
+            "2026년 2월 법인세 신고 절차 설명": [0.0, 1.0],
+        }
+    )
+    modeler = TopicModeler(
+        embedding_provider=provider,
+        config=TopicModelConfig(use_session_representatives=True, min_topics=1),
+    )
 
-    representatives = modeler._build_session_representatives(rows)
+    result = modeler.fit_predict(docs)
 
-    assert representatives == {"s-valid": "d-best"}
+    assert len(result.topics) == 1
+    assert result.topics[0].texts == ["2026년 2월 법인세 신고 절차 설명"]
+    assignment_by_document = {
+        item.document_id: item.topic_id for item in result.assignments
+    }
+    assert assignment_by_document["greeting"] == assignment_by_document["substantive"]
+
+
+def test_fit_predict_allows_sessions_without_selected_representative(
+    monkeypatch,
+) -> None:
+    docs = [
+        TopicDocument(
+            id="s-empty-doc",
+            text="simple greeting",
+            session_id="s-empty",
+            question="hi",
+            response="ok",
+            count=1,
+        ),
+        TopicDocument(
+            id="s-valid-doc",
+            text="tax filing process 2026 details",
+            session_id="s-valid",
+            question="tell me tax filing process in detail",
+            response="step-by-step explanation",
+            count=1,
+        ),
+    ]
+    provider = FakeEmbeddingProvider(
+        {
+            "simple greeting": [1.0, 0.0],
+            "tax filing process 2026 details": [0.0, 1.0],
+        }
+    )
+
+    def _pick_or_none(session_rows):
+        session_id = str(session_rows[0]["session_id"])
+        if session_id == "s-empty":
+            return None
+        return str(session_rows[0]["digest_hex"])
+
+    monkeypatch.setattr(pipeline_module, "pick_session_main_digest", _pick_or_none)
+
+    modeler = TopicModeler(
+        embedding_provider=provider,
+        config=TopicModelConfig(use_session_representatives=True, min_topics=1),
+    )
+
+    result = modeler.fit_predict(docs)
+
+    assert len(result.assignments) == 2
