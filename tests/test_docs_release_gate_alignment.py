@@ -49,17 +49,16 @@ def test_release_gate_fragments_match_docs_and_workflows() -> None:
             read("docs/engineering/harness-engineering.md"),
         ]
     )
-    workflows = "\n".join(
-        [
-            read(".github/workflows/ci.yml"),
-            read(".github/workflows/publish.yml"),
-            read(".github/workflows/release.yml"),
-        ]
-    )
+    workflow_contents = {
+        ".github/workflows/ci.yml": read(".github/workflows/ci.yml"),
+        ".github/workflows/publish.yml": read(".github/workflows/publish.yml"),
+        ".github/workflows/release.yml": read(".github/workflows/release.yml"),
+    }
 
     for fragment in required_release_gate_fragments():
         assert fragment in docs
-        assert fragment in workflows
+        for path, content in workflow_contents.items():
+            assert fragment in content, f"missing fragment in {path}: {fragment}"
 
 
 def test_gitignore_covers_local_automation_artifacts() -> None:

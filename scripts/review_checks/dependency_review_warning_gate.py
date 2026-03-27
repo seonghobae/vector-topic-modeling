@@ -16,7 +16,7 @@ SNAPSHOT_WARNING_PATTERNS = (
     "number of snapshots compared for the base SHA",
 )
 UNKNOWN_LICENSE_PATTERN = re.compile(
-    r"⚠️\s*(\d+)\s*package\(s\)\s*with unknown licenses",
+    r"(?:⚠(?:️)?\s*)?(\d+)\s*package\(s\)\s*with unknown licenses",
     flags=re.IGNORECASE,
 )
 
@@ -79,7 +79,15 @@ def _decode_comment_entry(line: str) -> dict[str, Any] | None:
 
 def _run_gh(command: list[str]) -> str:
     """Execute gh command and return captured stdout text."""
-    result = subprocess.run(command, check=True, text=True, capture_output=True)
+    try:
+        result = subprocess.run(command, check=True, text=True, capture_output=True)
+    except subprocess.CalledProcessError as exc:
+        stderr = str(exc.stderr or "").strip()
+        stdout = str(exc.output or "").strip()
+        detail = stderr or stdout or "no output"
+        raise RuntimeError(
+            f"gh command failed (exit={int(exc.returncode)}): {detail}"
+        ) from exc
     return result.stdout
 
 
@@ -146,9 +154,25 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     """CLI entrypoint for dependency-review warning policy evaluation."""
     args = parse_args()
-    comments = fetch_issue_comments(
-        owner=args.owner, repo=args.repo, pull_number=args.pr
-    )
+    try:
+        comments = fetch_issue_comments(
+            owner=args.owner, repo=args.repo, pull_number=args.pr
+        )
+    except RuntimeError as exc:
+        print(
+            json.dumps(
+                {
+                    "status": "gh-error",
+                    "owner": args.owner,
+                    "repo": args.repo,
+                    "pr": args.pr,
+                    "error": str(exc),
+                },
+                ensure_ascii=False,
+                sort_keys=True,
+            )
+        )
+        return 2
     body = find_latest_dependency_review_comment_body(comments)
     if body is None:
         print(

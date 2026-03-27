@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import importlib.util
 from pathlib import Path
+import subprocess
 import sys
-from types import SimpleNamespace
-from typing import Any
+from types import ModuleType, SimpleNamespace
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SCRIPT_PATH = (
@@ -12,11 +12,14 @@ SCRIPT_PATH = (
 )
 
 
-def _load_module() -> Any:
+def _load_module() -> ModuleType:
     spec = importlib.util.spec_from_file_location(
         "dependency_review_warning_gate", SCRIPT_PATH
     )
-    assert spec is not None and spec.loader is not None
+    if spec is None:
+        raise RuntimeError(f"Failed to create import spec for: {SCRIPT_PATH}")
+    if spec.loader is None:
+        raise RuntimeError(f"Missing loader for import spec: {SCRIPT_PATH}")
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
     spec.loader.exec_module(module)
@@ -62,6 +65,14 @@ def test_parse_dependency_review_comment_without_warnings_is_clean() -> None:
 
     assert summary.has_snapshot_warning is False
     assert summary.unknown_license_count == 0
+
+
+def test_parse_dependency_review_comment_handles_plain_warning_emoji_variant() -> None:
+    body = "⚠ 3 package(s) with unknown licenses."
+
+    summary = MODULE.parse_dependency_review_comment(body)
+
+    assert summary.unknown_license_count == 3
 
 
 def test_evaluate_warning_policy_fails_on_disallowed_snapshot_warning() -> None:
@@ -168,6 +179,34 @@ def test_decode_comment_entry_handles_double_encoded_json_line() -> None:
     assert decoded["user"]["login"] == "github-actions[bot]"
 
 
+def test_run_gh_wraps_called_process_error() -> None:
+    command = ["gh", "api", "/repos/example/example/issues/1/comments"]
+    exc = subprocess.CalledProcessError(
+        returncode=1,
+        cmd=command,
+        output="out",
+        stderr="boom",
+    )
+
+    def _raise(*args, **kwargs):
+        raise exc
+
+    original_run = MODULE.subprocess.run
+    MODULE.subprocess.run = _raise
+    try:
+        try:
+            MODULE._run_gh(command)
+        except RuntimeError as err:
+            message = str(err)
+        else:
+            raise AssertionError("expected RuntimeError")
+    finally:
+        MODULE.subprocess.run = original_run
+
+    assert "gh command failed" in message
+    assert "exit=1" in message
+
+
 def test_main_returns_2_when_dependency_review_comment_is_missing(
     monkeypatch, capsys
 ) -> None:
@@ -182,7 +221,7 @@ def test_main_returns_2_when_dependency_review_comment_is_missing(
             allow_snapshot_warning=False,
         ),
     )
-    monkeypatch.setattr(MODULE, "fetch_issue_comments", lambda **kwargs: [])
+    monkeypatch.setattr(MODULE, "fetch_issue_comments", lambda **_: [])
 
     exit_code = MODULE.main()
 
@@ -206,7 +245,7 @@ def test_main_returns_1_when_policy_evaluation_fails(monkeypatch, capsys) -> Non
     monkeypatch.setattr(
         MODULE,
         "fetch_issue_comments",
-        lambda **kwargs: [
+        lambda **_: [
             {
                 "created_at": "2026-03-27T00:00:00Z",
                 "user": {"login": "github-actions[bot]"},
@@ -238,7 +277,7 @@ def test_main_returns_0_when_policy_passes(monkeypatch, capsys) -> None:
     monkeypatch.setattr(
         MODULE,
         "fetch_issue_comments",
-        lambda **kwargs: [
+        lambda **_: [
             {
                 "created_at": "2026-03-27T00:00:00Z",
                 "user": {"login": "github-actions[bot]"},
@@ -252,3 +291,27 @@ def test_main_returns_0_when_policy_passes(monkeypatch, capsys) -> None:
     assert exit_code == 0
     output = capsys.readouterr().out
     assert '"status": "ok"' in output
+
+
+def test_main_returns_2_when_fetch_raises_runtime_error(monkeypatch, capsys) -> None:
+    monkeypatch.setattr(
+        MODULE,
+        "parse_args",
+        lambda: SimpleNamespace(
+            owner="seonghobae",
+            repo="vector-topic-modeling",
+            pr=41,
+            max_unknown_licenses=0,
+            allow_snapshot_warning=False,
+        ),
+    )
+
+    def _raise_error(**_: object) -> list[dict[str, object]]:
+        raise RuntimeError("gh command failed")
+
+    monkeypatch.setattr(MODULE, "fetch_issue_comments", _raise_error)
+
+    exit_code = MODULE.main()
+
+    assert exit_code == 2
+    assert '"status": "gh-error"' in capsys.readouterr().out
