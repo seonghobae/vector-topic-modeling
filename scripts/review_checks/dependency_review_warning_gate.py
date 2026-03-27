@@ -31,7 +31,7 @@ class DependencyReviewWarningSummary:
 
 def parse_dependency_review_comment(body: str) -> DependencyReviewWarningSummary:
     """Extract snapshot and unknown-license warning signals from comment text."""
-    normalized = body.replace("\\n", "\n")
+    normalized = body
     has_snapshot_warning = any(
         token.lower() in normalized.lower() for token in SNAPSHOT_WARNING_PATTERNS
     )
@@ -52,12 +52,14 @@ def evaluate_warning_policy(
     allow_snapshot_warning: bool,
 ) -> tuple[bool, list[str]]:
     """Validate parsed warning summary against configured acceptance limits."""
+    normalized_max_unknown_licenses = max(int(max_unknown_licenses), 0)
     reasons: list[str] = []
     if summary.has_snapshot_warning and not allow_snapshot_warning:
         reasons.append("snapshot-warning")
-    if summary.unknown_license_count > max_unknown_licenses:
+    if summary.unknown_license_count > normalized_max_unknown_licenses:
         reasons.append(
-            f"unknown-licenses:{summary.unknown_license_count}>{max_unknown_licenses}"
+            "unknown-licenses:"
+            f"{summary.unknown_license_count}>{normalized_max_unknown_licenses}"
         )
     return not reasons, reasons
 

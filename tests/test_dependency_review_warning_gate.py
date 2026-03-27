@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib.util
 from pathlib import Path
 import sys
+from types import SimpleNamespace
 from typing import Any
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -54,6 +55,15 @@ def test_parse_dependency_review_comment_detects_head_snapshot_missing_warning()
     assert summary.unknown_license_count == 0
 
 
+def test_parse_dependency_review_comment_without_warnings_is_clean() -> None:
+    body = "Dependency review completed with no warning sections."
+
+    summary = MODULE.parse_dependency_review_comment(body)
+
+    assert summary.has_snapshot_warning is False
+    assert summary.unknown_license_count == 0
+
+
 def test_evaluate_warning_policy_fails_on_disallowed_snapshot_warning() -> None:
     summary = MODULE.DependencyReviewWarningSummary(
         has_snapshot_warning=True,
@@ -86,6 +96,38 @@ def test_evaluate_warning_policy_fails_on_unknown_license_threshold() -> None:
     assert "unknown-licenses:2>1" in reasons
 
 
+def test_evaluate_warning_policy_passes_when_within_limits() -> None:
+    summary = MODULE.DependencyReviewWarningSummary(
+        has_snapshot_warning=False,
+        unknown_license_count=1,
+    )
+
+    ok, reasons = MODULE.evaluate_warning_policy(
+        summary=summary,
+        max_unknown_licenses=1,
+        allow_snapshot_warning=True,
+    )
+
+    assert ok is True
+    assert reasons == []
+
+
+def test_evaluate_warning_policy_clamps_negative_max_unknown_licenses_to_zero() -> None:
+    summary = MODULE.DependencyReviewWarningSummary(
+        has_snapshot_warning=False,
+        unknown_license_count=0,
+    )
+
+    ok, reasons = MODULE.evaluate_warning_policy(
+        summary=summary,
+        max_unknown_licenses=-5,
+        allow_snapshot_warning=True,
+    )
+
+    assert ok is True
+    assert reasons == []
+
+
 def test_find_latest_dependency_review_comment_body_ignores_other_comments() -> None:
     comments = [
         {"user": {"login": "other-bot"}, "body": "some comment"},
@@ -99,3 +141,114 @@ def test_find_latest_dependency_review_comment_body_ignores_other_comments() -> 
 
     assert comment_body is not None
     assert "dependency-review-pr-comment-marker" in comment_body
+
+
+def test_find_latest_dependency_review_comment_body_returns_none_without_marker() -> (
+    None
+):
+    comments = [
+        {
+            "created_at": "2026-03-27T00:00:00Z",
+            "user": {"login": "github-actions[bot]"},
+            "body": "no marker present",
+        }
+    ]
+
+    assert MODULE.find_latest_dependency_review_comment_body(comments) is None
+
+
+def test_decode_comment_entry_handles_double_encoded_json_line() -> None:
+    line = (
+        '"{\\"user\\": {\\"login\\": \\"github-actions[bot]\\"}, \\"body\\": \\"x\\"}"'
+    )
+
+    decoded = MODULE._decode_comment_entry(line)
+
+    assert decoded is not None
+    assert decoded["user"]["login"] == "github-actions[bot]"
+
+
+def test_main_returns_2_when_dependency_review_comment_is_missing(
+    monkeypatch, capsys
+) -> None:
+    monkeypatch.setattr(
+        MODULE,
+        "parse_args",
+        lambda: SimpleNamespace(
+            owner="seonghobae",
+            repo="vector-topic-modeling",
+            pr=41,
+            max_unknown_licenses=0,
+            allow_snapshot_warning=False,
+        ),
+    )
+    monkeypatch.setattr(MODULE, "fetch_issue_comments", lambda **kwargs: [])
+
+    exit_code = MODULE.main()
+
+    assert exit_code == 2
+    output = capsys.readouterr().out
+    assert '"status": "missing-comment"' in output
+
+
+def test_main_returns_1_when_policy_evaluation_fails(monkeypatch, capsys) -> None:
+    monkeypatch.setattr(
+        MODULE,
+        "parse_args",
+        lambda: SimpleNamespace(
+            owner="seonghobae",
+            repo="vector-topic-modeling",
+            pr=41,
+            max_unknown_licenses=0,
+            allow_snapshot_warning=False,
+        ),
+    )
+    monkeypatch.setattr(
+        MODULE,
+        "fetch_issue_comments",
+        lambda **kwargs: [
+            {
+                "created_at": "2026-03-27T00:00:00Z",
+                "user": {"login": "github-actions[bot]"},
+                "body": "⚠️: No snapshots were found for the head SHA.\n<!-- dependency-review-pr-comment-marker -->",
+            }
+        ],
+    )
+
+    exit_code = MODULE.main()
+
+    assert exit_code == 1
+    output = capsys.readouterr().out
+    assert '"status": "failed"' in output
+    assert "snapshot-warning" in output
+
+
+def test_main_returns_0_when_policy_passes(monkeypatch, capsys) -> None:
+    monkeypatch.setattr(
+        MODULE,
+        "parse_args",
+        lambda: SimpleNamespace(
+            owner="seonghobae",
+            repo="vector-topic-modeling",
+            pr=41,
+            max_unknown_licenses=1,
+            allow_snapshot_warning=True,
+        ),
+    )
+    monkeypatch.setattr(
+        MODULE,
+        "fetch_issue_comments",
+        lambda **kwargs: [
+            {
+                "created_at": "2026-03-27T00:00:00Z",
+                "user": {"login": "github-actions[bot]"},
+                "body": "⚠️ 1 package(s) with unknown licenses.\n<!-- dependency-review-pr-comment-marker -->",
+            }
+        ],
+    )
+
+    exit_code = MODULE.main()
+
+    assert exit_code == 0
+    output = capsys.readouterr().out
+    assert '"status": "ok"' in output
