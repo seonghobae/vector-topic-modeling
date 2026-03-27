@@ -1,6 +1,10 @@
 # Harness Engineering
 
 - Use `uv run pytest -q` for verification.
+  - `pyproject.toml` enforces `--cov=vector_topic_modeling --cov-branch`
+    and `--cov-fail-under=100`.
+- Use `uv run python scripts/docstring_coverage.py --min-percent 100`
+  to verify product docstring coverage is 100%.
 - Before build/smoke checks, remove previous artifacts:
   - POSIX shell: `rm -rf dist .venv-smoke-cli`
   - PowerShell: `Remove-Item -Recurse -Force dist, .venv-smoke-cli`
@@ -10,6 +14,9 @@
   installed-wheel import and console-script paths.
 - Keep tests deterministic and network-free unless explicitly testing the
   provider adapter.
+- Coverage policy: 100% line + 100% branch for `src/vector_topic_modeling`.
+- Docstring policy: 100% AST-level module/class/function docstring coverage
+  for `src/vector_topic_modeling`.
 - `.github/workflows/ci.yml` is the canonical pre-merge verification path
   for pull requests.
 - `.github/workflows/release.yml` is the canonical tag/manual release

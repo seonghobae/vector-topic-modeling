@@ -12,14 +12,17 @@ _TOKEN_LIKE_RE = re.compile(
 
 
 def strip_nul(value: str) -> str:
+    """Remove NUL characters from an input string."""
     return value.replace("\x00", "")
 
 
 def clean_env(value: str | None) -> str:
+    """Normalize optional environment text to a stripped string."""
     return ("" if value is None else value).strip()
 
 
 def redact_pii_and_secrets(value: str) -> str:
+    """Redact emails and token-like substrings from free-form text."""
     text = strip_nul(str(value or ""))
     if not text:
         return ""

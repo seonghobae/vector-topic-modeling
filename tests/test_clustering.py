@@ -3,10 +3,12 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from vector_topic_modeling.clustering import (
+    Cluster,
     adaptive_greedy_cluster,
     cosine_similarity,
     greedy_cluster,
     match_clusters_by_centroid,
+    rescue_display_dominance,
     stable_topic_id,
 )
 
@@ -176,3 +178,51 @@ def test_adaptive_greedy_cluster_respects_max_clusters_and_is_deterministic() ->
     )
     assert len(list(res1["clusters"])) <= 3
     assert list(res1["clusters"]) == list(res2["clusters"])
+
+
+def test_adaptive_greedy_cluster_penalizes_cluster_count_when_top_share_is_within_limit() -> (
+    None
+):
+    res = adaptive_greedy_cluster(
+        [("only", [1.0, 0.0], 3)],
+        initial_threshold=0.9,
+        max_top_share=1.0,
+        min_clusters=2,
+        max_clusters=3,
+        step=0.1,
+        tries=1,
+    )
+
+    assert res["ok"] is False
+    assert res["cluster_count"] == 1
+    assert res["top_cluster_share"] == 1.0
+
+
+def test_rescue_display_dominance_keeps_previous_best_when_split_candidate_is_worse() -> (
+    None
+):
+    dominant_texts = [f"a{i}" for i in range(5)] + [f"b{i}" for i in range(5)]
+    clusters = [
+        Cluster(centroid=[0.0, 0.0], texts=dominant_texts, total_count=10),
+        Cluster(centroid=[0.0, 1.0], texts=["runner"], total_count=9),
+    ]
+    items_by_text = {
+        **{f"a{i}": ([1.0, 0.0], 1) for i in range(5)},
+        **{f"b{i}": ([0.0, 1.0], 1) for i in range(5)},
+        "runner": ([0.0, 1.0], 9),
+    }
+
+    res = rescue_display_dominance(
+        clusters,
+        items_by_text=items_by_text,
+        initial_threshold=0.0,
+        max_display_share=0.4,
+        display_limit=2,
+        step=0.5,
+        tries=2,
+    )
+
+    assert res["rescued"] is False
+    assert res["rescue_threshold"] is None
+    assert res["display_top_share_after"] == res["display_top_share_before"]
+    assert [cluster.total_count for cluster in res["clusters"]] == [10, 9]

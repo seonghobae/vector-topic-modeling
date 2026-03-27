@@ -8,6 +8,7 @@ import pytest
 
 from vector_topic_modeling.ingestion import (
     TopicDocumentIngestionConfig,
+    _resolve_text,
     load_ingestion_config,
     load_jsonl_topic_documents,
     topic_document_from_row,
@@ -140,3 +141,19 @@ def test_topic_document_from_row_accepts_non_json_serializable_payload_values() 
     doc = topic_document_from_row(row, row_index=0)
 
     assert "2026-01-01" in doc.text
+
+
+def test_resolve_text_skips_empty_content_fields_then_uses_payload_fields() -> None:
+    config = TopicDocumentIngestionConfig(
+        content_fields=("title", "body"),
+        payload_fields=("payload",),
+    )
+
+    text = _resolve_text(
+        row={"title": "   ", "body": None, "payload": "fallback payload"},
+        question="",
+        response="",
+        config=config,
+    )
+
+    assert text == "fallback payload"

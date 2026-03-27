@@ -16,8 +16,8 @@ client in `src/vector_topic_modeling/providers/openai_compat.py`.
 
 - Keep `.github/dependabot.yml` present and configured for `pip` and
   `github-actions` ecosystems.
-- `dependency-review.yml` runs on every PR and fails on high-severity
-  known vulnerabilities in added or changed dependencies.
+- `dependency-review.yml` runs on every PR and fails on moderate-severity
+  (or above) known vulnerabilities in added or changed dependencies.
 - Review dependency-update PRs promptly and keep the lock file current via
   the normal `uv` workflow.
 - If a vulnerability has no patched upstream version, do not leave it as

@@ -22,6 +22,7 @@
 ```bash
 uv sync --extra dev
 uv run pytest -q
+uv run python scripts/docstring_coverage.py --min-percent 100
 # Delete any previous build artifacts and smoke-test virtual environment.
 # On POSIX shells: rm -rf dist .venv-smoke-cli
 # On Windows PowerShell: Remove-Item -Recurse -Force dist, .venv-smoke-cli
@@ -37,6 +38,7 @@ Required CI status checks:
 - `workflow-lint`
 - `test-and-build (3.11)`
 - `test-and-build (3.12)`
+- `dependency-review`
 
 Branch protection / merge policy:
 
@@ -107,6 +109,8 @@ If automation is unavailable, publish from a trusted local environment:
 
 ```bash
 uv sync --extra dev
+uv run pytest -q
+uv run python scripts/docstring_coverage.py --min-percent 100
 # Delete any previous build artifacts and smoke-test virtual environment.
 # On POSIX shells: rm -rf dist .venv-smoke-cli
 # On Windows PowerShell: Remove-Item -Recurse -Force dist, .venv-smoke-cli

@@ -1,6 +1,11 @@
 from __future__ import annotations
 
-from vector_topic_modeling.pipeline import TopicDocument, TopicModelConfig, TopicModeler
+from vector_topic_modeling.pipeline import (
+    PreparedRow,
+    TopicDocument,
+    TopicModelConfig,
+    TopicModeler,
+)
 
 
 class FakeEmbeddingProvider:
@@ -101,3 +106,34 @@ def test_topic_modeler_session_aware_mode_keeps_sessionless_documents() -> None:
 
     assert len(result.topics) == 1
     assert result.assignments[0].topic_id != "unassigned"
+
+
+def test_build_session_representatives_skips_sessions_without_main_digest() -> None:
+    modeler = TopicModeler(
+        embedding_provider=FakeEmbeddingProvider({"v": [1.0, 0.0]}),
+        config=TopicModelConfig(use_session_representatives=True),
+    )
+    rows: list[PreparedRow] = [
+        {
+            "document_id": "0",
+            "session_id": "s-empty",
+            "question": "x",
+            "response": "y",
+            "text": "x y",
+            "digest_hex": "",
+            "count": 1,
+        },
+        {
+            "document_id": "1",
+            "session_id": "s-valid",
+            "question": "long tax filing question 2026",
+            "response": "detailed response with steps",
+            "text": "v",
+            "digest_hex": "d-best",
+            "count": 1,
+        },
+    ]
+
+    representatives = modeler._build_session_representatives(rows)
+
+    assert representatives == {"s-valid": "d-best"}
