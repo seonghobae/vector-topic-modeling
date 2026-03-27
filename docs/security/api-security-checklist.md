@@ -18,6 +18,9 @@ client in `src/vector_topic_modeling/providers/openai_compat.py`.
   `github-actions` ecosystems.
 - `dependency-review.yml` runs on every PR and fails on moderate-severity
   (or above) known vulnerabilities in added or changed dependencies.
+- `dependency-review.yml` enables `retry-on-snapshot-warnings: true` to
+  reduce non-actionable snapshot warning noise while preserving vulnerability
+  gate enforcement.
 - Review dependency-update PRs promptly and keep the lock file current via
   the normal `uv` workflow.
 - If a vulnerability has no patched upstream version, do not leave it as

@@ -24,6 +24,7 @@ def test_required_check_documents_include_dependency_review_gate() -> None:
 def test_dependency_review_severity_wording_matches_workflow_setting() -> None:
     workflow = _read(".github/workflows/dependency-review.yml")
     assert "fail-on-severity: moderate" in workflow
+    assert "retry-on-snapshot-warnings: true" in workflow
 
     for relpath in [
         "ARCHITECTURE.md",
