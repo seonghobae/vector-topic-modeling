@@ -24,6 +24,8 @@ def test_dependency_review_severity_wording_matches_workflow_setting() -> None:
     workflow = _read(".github/workflows/dependency-review.yml")
     assert "fail-on-severity: moderate" in workflow
     assert "retry-on-snapshot-warnings: true" in workflow
+    assert "comment-summary-in-pr: on-failure" in workflow
+    assert "comment-summary-in-pr: always" not in workflow
 
     for relpath in [
         "ARCHITECTURE.md",
@@ -33,6 +35,9 @@ def test_dependency_review_severity_wording_matches_workflow_setting() -> None:
         content = _read(relpath)
         assert "moderate-severity" in content, relpath
         assert "high-severity known vulnerabilities" not in content, relpath
+
+    api_checklist = _read("docs/security/api-security-checklist.md")
+    assert "comment-summary-in-pr: on-failure" in api_checklist
 
 
 def test_dependency_submission_workflow_tracks_uv_lock_snapshots() -> None:
