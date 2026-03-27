@@ -55,3 +55,4 @@ def test_dependency_submission_workflow_tracks_uv_lock_snapshots() -> None:
 
     harness_doc = _read("docs/engineering/harness-engineering.md")
     assert "dependency_review_warning_gate.py" in harness_doc
+    assert "pr_check_gate_classifier.py" in harness_doc

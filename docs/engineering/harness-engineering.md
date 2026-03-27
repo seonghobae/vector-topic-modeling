@@ -28,5 +28,10 @@
   - Required args: `--owner`, `--repo`, `--pr`
   - Policy args: `--max-unknown-licenses` and optional
     `--allow-snapshot-warning`
+- Use `uv run python scripts/review_checks/pr_check_gate_classifier.py`
+  to classify PR check contexts into required blockers vs optional external
+  status noise (for example stale CodeRabbit contexts).
+  - Input: JSON array from `gh pr checks <pr> --json name,state,completedAt`
+  - Output: `gate=PASS|FAIL` summary with required/optional buckets
 - Branch protection on `main` requires pull-request-only merges, one
   approving review, and all required checks passing before merge.
