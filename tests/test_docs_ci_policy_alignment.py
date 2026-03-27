@@ -40,4 +40,7 @@ def test_dependency_submission_workflow_tracks_uv_lock_snapshots() -> None:
     workflow = _read(".github/workflows/dependency-submission.yml")
 
     assert "component-detection-dependency-submission-action" in workflow
-    assert "UvLock=EnableIfDefaultOff" in workflow
+    assert (
+        "detectorArgs: Pip=EnableIfDefaultOff,SimplePip=EnableIfDefaultOff,UvLock=EnableIfDefaultOff"
+        in workflow
+    )
