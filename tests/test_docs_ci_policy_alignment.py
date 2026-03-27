@@ -48,3 +48,7 @@ def test_dependency_submission_workflow_tracks_uv_lock_snapshots() -> None:
         "detectorArgs: Pip=EnableIfDefaultOff,SimplePip=EnableIfDefaultOff,UvLock=EnableIfDefaultOff"
         in workflow
     )
+    assert (
+        "if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.fork == false"
+        in workflow
+    )

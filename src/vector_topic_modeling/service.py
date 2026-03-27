@@ -12,7 +12,7 @@ from vector_topic_modeling._sanitize import strip_nul
 def _norm_value(value: str | None) -> str:
     """Normalize filter values into stable non-empty tokens."""
     normalized = strip_nul(str(value or "")).strip()
-    return "all" if not normalized else normalized
+    return normalized if normalized else "all"
 
 
 def filter_signature_sha256_hex(filters: dict[str, str]) -> str:

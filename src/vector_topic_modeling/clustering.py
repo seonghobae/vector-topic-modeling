@@ -9,7 +9,7 @@ import json
 from typing import TypedDict
 
 
-def _top_share_in_prefix(clusters: list["Cluster"], *, limit: int) -> tuple[int, float]:
+def _top_share_in_prefix(clusters: list[Cluster], *, limit: int) -> tuple[int, float]:
     """Return total count and dominant-share among the first ``limit`` clusters."""
     n = max(int(limit), 0)
     prefix = clusters[:n] if n else []
@@ -20,13 +20,13 @@ def _top_share_in_prefix(clusters: list["Cluster"], *, limit: int) -> tuple[int,
     return total, float(max(counts) / total)
 
 
-def _stable_cluster_sort_key(cluster: "Cluster") -> tuple[int, str]:
+def _stable_cluster_sort_key(cluster: Cluster) -> tuple[int, str]:
     """Build a deterministic sort key by size then lexical tie-break."""
     tie = min((str(text) for text in cluster.texts), default="")
     return (-int(cluster.total_count), tie)
 
 
-def _cluster_stats(clusters: list["Cluster"]) -> tuple[int, float]:
+def _cluster_stats(clusters: list[Cluster]) -> tuple[int, float]:
     """Compute cluster count and global share of the largest cluster."""
     if not clusters:
         return 0, 0.0

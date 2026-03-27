@@ -175,7 +175,7 @@ def test_fit_predict_allows_sessions_without_selected_representative(
         }
     )
 
-    def _pick_or_none(session_rows):
+    def _pick_or_none(session_rows: list[dict[str, object]]) -> str | None:
         session_id = str(session_rows[0]["session_id"])
         if session_id == "s-empty":
             return None

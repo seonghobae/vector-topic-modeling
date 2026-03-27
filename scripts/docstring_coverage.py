@@ -30,9 +30,11 @@ def _iter_symbol_docstrings(repo_root: Path, file_path: Path) -> list[tuple[str,
     symbols: list[tuple[str, bool]] = []
     rel_path = file_path.relative_to(repo_root)
     symbols.append((f"{rel_path}:<module>", bool(ast.get_docstring(tree))))
-    for node in ast.walk(tree):
-        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
-            symbols.append((f"{rel_path}:{node.name}", bool(ast.get_docstring(node))))
+    symbols.extend(
+        (f"{rel_path}:{node.name}", bool(ast.get_docstring(node)))
+        for node in ast.walk(tree)
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
+    )
     return symbols
 
 
