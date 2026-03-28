@@ -60,6 +60,9 @@ database storage, background jobs, XLSX export, and email delivery.
   (plus a weekly schedule) and uploads SARIF results to GitHub Security.
 - `codeql.yml` performs CodeQL static analysis for Python on every push
   and PR (plus a weekly schedule) and uploads findings to GitHub Security.
+- `strix.yml` runs Strix AI-powered white-box security scanning on every
+  PR (plus a weekly schedule) using the `quick` scan mode in non-interactive
+  headless mode.
 - `dependency-review.yml` reviews dependency changes in each PR and
   fails on moderate-severity (or above) known vulnerabilities.
 - `dependency-submission.yml` submits dependency snapshots for `pip` and

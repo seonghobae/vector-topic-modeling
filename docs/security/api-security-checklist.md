@@ -79,6 +79,10 @@ client in `src/vector_topic_modeling/providers/openai_compat.py`.
 - `codeql.yml` performs CodeQL static analysis for Python on every push, PR,
   and weekly schedule, surfacing security and quality findings in GitHub
   Security.
+- `strix.yml` runs Strix (<https://github.com/usestrix/strix>) AI-powered
+  white-box security scanning on every PR and weekly schedule using the `quick`
+  scan mode in non-interactive headless mode, validating findings with
+  proof-of-concept exploits to reduce false positives.
 
 ## Not currently applicable
 
