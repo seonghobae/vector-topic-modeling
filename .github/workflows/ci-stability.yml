@@ -1,0 +1,58 @@
+name: ci-stability
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: "23 3 * * 2"
+
+permissions:
+  contents: read
+
+jobs:
+  python-stability:
+    name: stability (py${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - python-version: "3.13"
+            experimental: false
+          - python-version: "3.14"
+            experimental: false
+    continue-on-error: ${{ matrix.experimental }}
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Sync dependencies
+        run: uv sync
+
+      - name: Run tests
+        run: uv run pytest -q
+
+      - name: Report and verify docstring coverage
+        if: matrix.python-version == '3.13'
+        run: uv run python scripts/docstring_coverage.py --min-percent 100
+
+      - name: Remove stale build artifacts
+        run: rm -rf dist ".venv-smoke-cli-${{ matrix.python-version }}"
+
+      - name: Build distributions
+        run: uv run python -m build
+
+      - name: Smoke install built wheel
+        run: |
+          uv run python scripts/smoke_installed_cli.py --dist-dir dist --venv-dir ".venv-smoke-cli-${{ matrix.python-version }}"

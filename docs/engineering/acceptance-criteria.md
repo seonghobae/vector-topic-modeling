@@ -29,3 +29,9 @@
   with actual GitHub workflow and protected-branch policy.
 - Dependency review policy gates pull requests on moderate-severity (or above)
   vulnerabilities.
+- CI/CD stability policy runs an additional Python compatibility lane for
+  `3.13` and `3.14`, with `stability (py3.13)` required for protected-branch
+  merges.
+- PR integration policy enforces dev→main flow via `Enforce head branch policy`,
+  with explicit emergency exceptions (`hotfix/*`, `release/*`, or
+  `override:branch-guard`).

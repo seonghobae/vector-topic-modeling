@@ -116,3 +116,39 @@ def test_dependency_review_runtime_monitor_workflow_and_docs_are_aligned() -> No
     harness_doc = _read("docs/engineering/harness-engineering.md")
     assert "`fetch-error`: retry first" in harness_doc
     assert "`parse-error` or `unexpected-error`: repair-focused path" in harness_doc
+
+
+def test_ci_stability_workflow_covers_python_313_and_314() -> None:
+    workflow = _read(".github/workflows/ci-stability.yml")
+
+    assert "name: ci-stability" in workflow
+    assert "pull_request:" in workflow
+    assert "branches: [main]" in workflow
+    assert "push:" in workflow
+    assert "schedule:" in workflow
+    assert 'python-version: "3.13"' in workflow
+    assert 'python-version: "3.14"' in workflow
+    assert "continue-on-error: ${{ matrix.experimental }}" in workflow
+    assert "name: stability (py${{ matrix.python-version }})" in workflow
+
+
+def test_pr_branch_guard_workflow_enforces_dev_to_main_policy() -> None:
+    workflow = _read(".github/workflows/pr-branch-guard.yml")
+
+    assert "name: PR Branch Guard" in workflow
+    assert "pull_request:" in workflow
+    assert "branches: [main]" in workflow
+    assert "override:branch-guard" in workflow
+    assert 'const isDev = head === "dev";' in workflow
+    assert "const isHotfix = /^hotfix" in workflow
+    assert "const isRelease = /^release" in workflow
+    assert "Blocked: PRs targeting 'main' must come from 'dev'" in workflow
+
+    for relpath in [
+        "ARCHITECTURE.md",
+        "docs/maintainers/releasing.md",
+        "docs/workflow/pr-continuity.md",
+    ]:
+        content = _read(relpath)
+        assert "Enforce head branch policy" in content, relpath
+        assert "stability (py3.13)" in content, relpath
