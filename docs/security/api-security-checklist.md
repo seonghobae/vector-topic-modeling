@@ -26,9 +26,15 @@ client in `src/vector_topic_modeling/providers/openai_compat.py`.
 - `dependency-review.yml` enables `retry-on-snapshot-warnings: true` to
   reduce non-actionable snapshot warning noise while preserving vulnerability
   gate enforcement.
+- `dependency-review.yml` adds a short `sleep 15` snapshot propagation wait
+  before invoking `actions/dependency-review-action` to reduce transient
+  head-snapshot race warnings in PR logs.
 - `dependency-review.yml` posts PR summary comments only on failures
   (`comment-summary-in-pr: on-failure`) so transient non-blocking warnings do
   not drown out actionable review failures.
+- `dependency-review.yml` sets
+  `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true` to run JavaScript actions on the
+  Node.js 24 runtime required by this repository CI policy.
 - Review dependency-update PRs promptly and keep the lock file current via
   the normal `uv` workflow.
 - If a vulnerability has no patched upstream version, do not leave it as
