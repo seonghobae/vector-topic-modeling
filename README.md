@@ -48,16 +48,14 @@ uv run python scripts/docstring_coverage.py --min-percent 100
 # On POSIX shells: rm -rf dist .venv-smoke-cli
 # On Windows PowerShell: Remove-Item -Recurse -Force dist, .venv-smoke-cli
 uv run python -m build
-uv run python scripts/smoke_installed_cli.py --dist-dir dist \
-  --venv-dir .venv-smoke-cli
+uv run python scripts/smoke_installed_cli.py --dist-dir dist --venv-dir .venv-smoke-cli
 ```
 
 The repository release gate also smoke-tests the installed
 `vector-topic-modeling` console script with:
 
 ```bash
-uv run python scripts/smoke_installed_cli.py --dist-dir dist \
-  --venv-dir .venv-smoke-cli
+uv run python scripts/smoke_installed_cli.py --dist-dir dist --venv-dir .venv-smoke-cli
 ```
 
 ## Quick start
