@@ -19,6 +19,11 @@
   for `src/vector_topic_modeling`.
 - `.github/workflows/ci.yml` is the canonical pre-merge verification path
   for pull requests.
+- `.github/workflows/ci-stability.yml` is the compatibility verification path
+  for Python 3.13 and 3.14 (PR-to-main, push-to-main, weekly schedule).
+- `.github/workflows/pr-branch-guard.yml` enforces head-branch policy for PRs
+  into `main` (`dev` default; emergency exceptions via `hotfix/*`,
+  `release/*`, or label `override:branch-guard`).
 - `.github/workflows/release.yml` is the canonical tag/manual release
   verification path for GitHub Release artifact creation.
 - `.github/workflows/publish.yml` is the canonical release-to-PyPI path

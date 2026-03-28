@@ -6,7 +6,12 @@
 - Treat the branch-linked open PR as canonical for the current task; avoid
   duplicate PRs for the same head branch.
 - Keep PR checks green (`workflow-lint`, `test-and-build (3.11)`,
-  `test-and-build (3.12)`, `dependency-review`) before requesting merge.
+  `test-and-build (3.12)`, `dependency-review`, `stability (py3.13)`,
+  `Enforce head branch policy`) before requesting merge.
+- Follow the default integration path: feature branches merge into `dev`, then
+  `dev` merges into `main`. PRs that target `main` directly are allowed only
+  for `hotfix/*`, `release/*`, or label-based override
+  `override:branch-guard`.
 - Keep local pre-PR verification green with:
   - `uv run pytest -q` (100% line+branch coverage gate),
   - `uv run python scripts/docstring_coverage.py --min-percent 100`,

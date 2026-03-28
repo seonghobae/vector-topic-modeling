@@ -39,11 +39,16 @@ Required CI status checks:
 - `test-and-build (3.11)`
 - `test-and-build (3.12)`
 - `dependency-review`
+- `stability (py3.13)`
+- `Enforce head branch policy`
 
 Branch protection / merge policy:
 
 - pull-request-only merges (no direct push to `main`)
 - at least one approving PR review before merge
+- PRs targeting `main` must come from head branch `dev` by default
+  (emergency exceptions allowed only for `hotfix/*`, `release/*`, or label
+  `override:branch-guard`)
 
 ## Versioning
 
@@ -78,25 +83,28 @@ Before tagging:
 
 **Prerequisite for PyPI Trusted Publishing:**
 Before your first automated release, configure a Trusted Publisher in PyPI:
+
 1. Log in to PyPI and go to your project's **Publishing** settings.
 2. Add a new publisher using GitHub.
-3. Set the owner (`seonghobae`), repository (`vector-topic-modeling`), and workflow name (`publish.yml`).
-4. Set the environment name to `pypi` to match the environment used in the workflow.
+3. Set the owner (`seonghobae`), repository (`vector-topic-modeling`), and
+   workflow name (`publish.yml`).
+4. Set the environment name to `pypi` to match the environment used in the
+   workflow.
 
-1. Create and push a `v`-prefixed tag:
+5. Create and push a `v`-prefixed tag:
 
    ```bash
    git checkout main
    git pull --ff-only
-    git tag v0.1.1
-    git push origin v0.1.1
-    ```
+   git tag v0.1.1
+   git push origin v0.1.1
+   ```
 
-2. The `release.yml` workflow verifies tests/build/smoke and creates a
+6. The `release.yml` workflow verifies tests/build/smoke and creates a
    GitHub Release with artifacts from that tag.
-3. The `publish.yml` workflow then runs on `release.published` and
+7. The `publish.yml` workflow then runs on `release.published` and
    publishes to PyPI using PyPI Trusted Publishing (OIDC).
-4. Confirm the GitHub branch protection for `main` still requires the
+8. Confirm the GitHub branch protection for `main` still requires the
    CI checks above and at least one approving PR review before merging
    any last-minute fixes.
 

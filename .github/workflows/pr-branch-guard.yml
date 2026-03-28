@@ -1,0 +1,50 @@
+name: PR Branch Guard
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize, edited, ready_for_review, labeled, unlabeled]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  enforce:
+    name: Enforce head branch policy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Validate PR head branch
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            if (!pr) {
+              core.setFailed("Missing pull_request payload (fail-closed).");
+              return;
+            }
+
+            const base = pr.base?.ref || "";
+            const head = pr.head?.ref || "";
+            const labels = (pr.labels || []).map((label) => label.name);
+
+            const BYPASS_LABEL = "override:branch-guard";
+            const isDev = head === "dev";
+            const isHotfix = /^hotfix\/[A-Za-z0-9._-]+$/.test(head);
+            const isRelease = /^release\/[A-Za-z0-9._-]+$/.test(head);
+            const hasBypass = labels.includes(BYPASS_LABEL);
+
+            const allowed = base === "main" && (isDev || isHotfix || isRelease || hasBypass);
+
+            core.info(
+              JSON.stringify({ base, head, labels, isDev, isHotfix, isRelease, hasBypass, allowed }, null, 2),
+            );
+
+            if (!allowed) {
+              core.setFailed(
+                `Blocked: PRs targeting 'main' must come from 'dev' by default. ` +
+                  `Emergency overrides: hotfix/*, release/*, or label '${BYPASS_LABEL}'. ` +
+                  `Got head='${head}', labels='${labels.join(",")}'.`,
+              );
+            }
