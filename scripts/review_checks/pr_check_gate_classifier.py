@@ -147,7 +147,7 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--required-checks",
-        default="workflow-lint,test-and-build (3.11),test-and-build (3.12),dependency-review",
+        default="workflow-lint,test-and-build (3.11),test-and-build (3.12),dependency-review,stability (py3.13),Enforce head branch policy",
         help="Comma-separated required check contexts",
     )
     return parser.parse_args()

@@ -37,6 +37,10 @@
   to classify PR check contexts into required blockers vs optional external
   status noise (for example stale CodeRabbit contexts).
   - Input: JSON array from `gh pr checks <pr> --json name,state,completedAt`
+  - Default required checks mirror protected-branch policy:
+    `workflow-lint`, `test-and-build (3.11)`, `test-and-build (3.12)`,
+    `dependency-review`, `stability (py3.13)`, and
+    `Enforce head branch policy`
   - Output: `gate=PASS|FAIL` summary with required/optional buckets
 - Use `uv run python scripts/review_checks/dependency_review_action_runtime_check.py`
   to monitor upstream `actions/dependency-review-action` runtime metadata and

@@ -207,6 +207,7 @@ uv run python scripts/smoke_installed_cli.py --dist-dir dist --venv-dir .venv-sm
 uv sync --extra dev
 uv run pytest -q
 rm -rf dist .venv-smoke-cli
+uv run python scripts/docstring_coverage.py --min-percent 100
 uv run python -m build
 uv run python scripts/smoke_installed_cli.py --dist-dir dist --venv-dir .venv-smoke-cli
 ```

@@ -211,6 +211,24 @@ def test_main_returns_0_when_required_contexts_are_green(monkeypatch, capsys) ->
     assert "gate=PASS" in capsys.readouterr().out
 
 
+def test_parse_args_default_required_checks_match_main_branch_policy(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(sys, "argv", ["pr_check_gate_classifier"])
+
+    args = MODULE.parse_args()
+    parsed = {fragment.strip() for fragment in str(args.required_checks).split(",")}
+
+    assert parsed == {
+        "workflow-lint",
+        "test-and-build (3.11)",
+        "test-and-build (3.12)",
+        "dependency-review",
+        "stability (py3.13)",
+        "Enforce head branch policy",
+    }
+
+
 def test_main_returns_1_when_required_context_fails(monkeypatch, capsys) -> None:
     payload = json.dumps(
         [

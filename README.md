@@ -43,6 +43,7 @@ uv sync --extra dev
 
 ```bash
 uv run pytest -q
+uv run python scripts/docstring_coverage.py --min-percent 100
 # Delete any previous build artifacts and smoke-test virtual environment.
 # On POSIX shells: rm -rf dist .venv-smoke-cli
 # On Windows PowerShell: Remove-Item -Recurse -Force dist, .venv-smoke-cli
