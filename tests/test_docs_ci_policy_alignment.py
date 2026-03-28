@@ -26,6 +26,7 @@ def test_dependency_review_severity_wording_matches_workflow_setting() -> None:
     assert "retry-on-snapshot-warnings: true" in workflow
     assert "comment-summary-in-pr: on-failure" in workflow
     assert "comment-summary-in-pr: always" not in workflow
+    assert "FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true" in workflow
 
     for relpath in [
         "ARCHITECTURE.md",
@@ -37,6 +38,7 @@ def test_dependency_review_severity_wording_matches_workflow_setting() -> None:
         assert "high-severity known vulnerabilities" not in content, relpath
         if relpath == "docs/security/api-security-checklist.md":
             assert "comment-summary-in-pr: on-failure" in content
+            assert "FORCE_JAVASCRIPT_ACTIONS_TO_NODE24" in content
 
 
 def test_dependency_submission_workflow_tracks_uv_lock_snapshots() -> None:
