@@ -1,0 +1,80 @@
+name: Dependency Review Runtime Monitor
+
+on:
+  schedule:
+    - cron: "17 2 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  monitor-runtime-metadata:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: "3.11"
+
+      - name: Evaluate dependency-review action runtime metadata
+        id: runtime_check
+        run: |
+          set +e
+          result="$(uv run python scripts/review_checks/dependency_review_action_runtime_check.py --expected-runtime node24 --action-ref actions/dependency-review-action@v4 --action-yaml-url https://raw.githubusercontent.com/actions/dependency-review-action/v4/action.yml)"
+          exit_code=$?
+          set -e
+
+          echo "$result"
+          echo "result=$result" >> "$GITHUB_OUTPUT"
+          echo "exit_code=$exit_code" >> "$GITHUB_OUTPUT"
+
+      - name: Write monitoring summary
+        run: |
+          uv run python - <<'PY'
+          import json
+          import os
+
+          raw_payload = os.environ["MONITOR_RESULT"]
+          try:
+              payload = json.loads(raw_payload)
+          except json.JSONDecodeError:
+              payload = {
+                  "status": "parse-error",
+                  "message": f"non-json monitor output: {raw_payload}",
+              }
+          with open(os.environ["GITHUB_STEP_SUMMARY"], "a", encoding="utf-8") as fh:
+              fh.write("## Dependency-review runtime monitor\n")
+              fh.write(f"- action_ref: `{payload.get('action_ref', 'unknown')}`\n")
+              fh.write(f"- expected_runtime: `{payload.get('expected_runtime', 'unknown')}`\n")
+              fh.write(f"- actual_runtime: `{payload.get('actual_runtime', 'unknown')}`\n")
+              fh.write(f"- status: `{payload.get('status', 'unknown')}`\n")
+              if payload.get("status") == "ready":
+                  fh.write(
+                      "- next_action: update dependency-review action pin and remove runtime force workaround (Issue #45)\n"
+                  )
+              elif payload.get("status") == "monitoring":
+                  fh.write("- next_action: continue monitoring Issue #45\n")
+              else:
+                  fh.write("- next_action: inspect fetch/parse error and repair monitor\n")
+          PY
+        env:
+          MONITOR_RESULT: ${{ steps.runtime_check.outputs.result }}
+
+      - name: Fail when upstream runtime is ready for migration
+        if: steps.runtime_check.outputs.exit_code == '1'
+        run: |
+          echo "Upstream runtime metadata is now node24; follow Issue #45 migration plan."
+          exit 1
+
+      - name: Fail when monitor execution errors
+        if: steps.runtime_check.outputs.exit_code == '2'
+        run: |
+          echo "Runtime monitor failed to fetch/parse upstream metadata."
+          exit 1

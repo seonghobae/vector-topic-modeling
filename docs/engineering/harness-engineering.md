@@ -33,5 +33,16 @@
   status noise (for example stale CodeRabbit contexts).
   - Input: JSON array from `gh pr checks <pr> --json name,state,completedAt`
   - Output: `gate=PASS|FAIL` summary with required/optional buckets
+- Use `uv run python scripts/review_checks/dependency_review_action_runtime_check.py`
+  to monitor upstream `actions/dependency-review-action` runtime metadata and
+  detect when mutable upstream ref `actions/dependency-review-action@v4`
+  transitions to a Node24-native runtime.
+  - Exit code `0`: still monitoring (runtime mismatch; current expected state)
+  - Exit code `1`: upstream runtime now matches expected Node24 (migration work
+    should proceed per Issue #45)
+  - Exit code `2`: monitor fetch/parse error that requires workflow repair
+- `.github/workflows/dependency-review-runtime-monitor.yml` is the canonical
+  scheduled/dispatch path for automated Issue #45 runtime-monitor evidence.
 - Branch protection on `main` requires pull-request-only merges, one
-  approving review, and all required checks passing before merge.
+  approving review, conversation resolution, and all required checks passing
+  before merge.

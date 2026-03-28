@@ -74,3 +74,26 @@ def test_ci_runs_docstring_coverage_step_once_for_python_311() -> None:
     assert "if: matrix.python-version == '3.11'" in workflow
     assert workflow.count("name: Report and verify docstring coverage") == 1
     assert workflow.count("if: matrix.python-version == '3.11'") == 1
+
+
+def test_dependency_review_runtime_monitor_workflow_and_docs_are_aligned() -> None:
+    workflow = _read(".github/workflows/dependency-review-runtime-monitor.yml")
+
+    assert "name: Dependency Review Runtime Monitor" in workflow
+    assert "schedule:" in workflow
+    assert "workflow_dispatch:" in workflow
+    assert "scripts/review_checks/dependency_review_action_runtime_check.py" in workflow
+    assert "actions/dependency-review-action@v4" in workflow
+    assert "2031cfc080254a8a887f58cffee85186f0e49e48" not in workflow
+    assert "--expected-runtime node24" in workflow
+
+    for relpath in [
+        "ARCHITECTURE.md",
+        "docs/engineering/harness-engineering.md",
+        "docs/security/api-security-checklist.md",
+    ]:
+        content = _read(relpath)
+        assert "dependency-review-runtime-monitor.yml" in content, relpath
+
+    security_doc = _read("docs/security/api-security-checklist.md")
+    assert "Issue #45" in security_doc
