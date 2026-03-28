@@ -21,6 +21,12 @@
   for pull requests.
 - `.github/workflows/ci-stability.yml` is the compatibility verification path
   for Python 3.13 and 3.14 (PR-to-main, push-to-main, weekly schedule).
+- `.github/workflows/cflite_pr.yml` is the PR-scoped ClusterFuzzLite path
+  (`mode: code-change`) and is intentionally limited to code-relevant paths
+  (`src/**`, `tests/**`, `.clusterfuzzlite/**`, workflow file) to avoid
+  docs-only PR fuzzing delays.
+- `.github/workflows/cflite_batch.yml` is the scheduled/manual
+  ClusterFuzzLite deep-fuzz path (`mode: batch`).
 - `.github/workflows/pr-branch-guard.yml` enforces head-branch policy for PRs
   into `main` (`dev` default; emergency exceptions via `hotfix/*`,
   `release/*`, or label `override:branch-guard`).

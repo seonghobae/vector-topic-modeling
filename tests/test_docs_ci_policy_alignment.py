@@ -156,3 +156,21 @@ def test_pr_branch_guard_workflow_enforces_dev_to_main_policy() -> None:
         content = _read(relpath)
         assert "Enforce head branch policy" in content, relpath
         assert "stability (py3.13)" in content, relpath
+
+
+def test_clusterfuzzlite_pr_workflow_uses_code_path_filtering() -> None:
+    workflow = _read(".github/workflows/cflite_pr.yml")
+
+    assert "name: ClusterFuzzLite PR fuzzing" in workflow
+    assert "pull_request:" in workflow
+    assert "branches: [main]" in workflow
+    assert "paths:" in workflow
+    assert "- 'src/**'" in workflow
+    assert "- 'tests/**'" in workflow
+    assert "- '.clusterfuzzlite/**'" in workflow
+    assert "- '.github/workflows/cflite_pr.yml'" in workflow
+
+    for relpath in ["ARCHITECTURE.md", "docs/engineering/harness-engineering.md"]:
+        content = _read(relpath)
+        assert "cflite_pr.yml" in content, relpath
+        assert "cflite_batch.yml" in content, relpath
