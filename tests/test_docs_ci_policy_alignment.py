@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import re
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -84,7 +85,9 @@ def test_dependency_review_runtime_monitor_workflow_and_docs_are_aligned() -> No
     assert "workflow_dispatch:" in workflow
     assert "scripts/review_checks/dependency_review_action_runtime_check.py" in workflow
     assert "actions/dependency-review-action@v4" in workflow
-    assert "2031cfc080254a8a887f58cffee85186f0e49e48" not in workflow
+    assert (
+        re.search(r"actions/dependency-review-action@[0-9a-f]{40}\b", workflow) is None
+    )
     assert "--expected-runtime node24" in workflow
 
     for relpath in [
