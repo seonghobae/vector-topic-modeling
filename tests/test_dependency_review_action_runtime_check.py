@@ -24,7 +24,13 @@ def _load_module() -> ModuleType:
         raise RuntimeError(f"Missing loader for import spec: {SCRIPT_PATH}")
     module = importlib.util.module_from_spec(spec)
     sys.modules[spec.name] = module
-    spec.loader.exec_module(module)
+    try:
+        spec.loader.exec_module(module)
+    except Exception as exc:  # pragma: no cover - defensive guard for loader failures
+        sys.modules.pop(spec.name, None)
+        raise RuntimeError(
+            f"Failed to import module from {SCRIPT_PATH}: {exc}"
+        ) from exc
     return module
 
 
@@ -57,6 +63,26 @@ def test_parse_runs_using_handles_double_quotes() -> None:
     assert MODULE.parse_runs_using(action_yaml) == "node24"
 
 
+def test_parse_runs_using_handles_inline_comment() -> None:
+    action_yaml = "runs:\n  using: node24 # current runtime\n"
+
+    assert MODULE.parse_runs_using(action_yaml) == "node24"
+
+
+def test_parse_runs_using_ignores_block_scalar_content() -> None:
+    action_yaml = (
+        "runs:\n  pre: |\n    using: node18\n  using: node24\n  main: dist/index.js\n"
+    )
+
+    assert MODULE.parse_runs_using(action_yaml) == "node24"
+
+
+def test_parse_runs_using_returns_none_when_runs_has_no_using() -> None:
+    action_yaml = "runs:\n  main: dist/index.js\n"
+
+    assert MODULE.parse_runs_using(action_yaml) is None
+
+
 def test_fetch_action_yaml_rejects_untrusted_url() -> None:
     try:
         MODULE.fetch_action_yaml(action_yaml_url="https://example.com/action.yml")
@@ -66,6 +92,19 @@ def test_fetch_action_yaml_rejects_untrusted_url() -> None:
         raise AssertionError("expected RuntimeError")
 
     assert message == "action_yaml_url must use https://raw.githubusercontent.com"
+
+
+def test_fetch_action_yaml_rejects_unexpected_raw_path() -> None:
+    try:
+        MODULE.fetch_action_yaml(
+            action_yaml_url="https://raw.githubusercontent.com/owner/repo/main/action.yml"
+        )
+    except RuntimeError as err:
+        message = str(err)
+    else:
+        raise AssertionError("expected RuntimeError")
+
+    assert "must target /actions/dependency-review-action/<ref>/action.yml" in message
 
 
 def test_evaluate_runtime_status_marks_expected_runtime_as_ready() -> None:

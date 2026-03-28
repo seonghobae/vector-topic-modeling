@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 from dataclasses import asdict, dataclass
 import json
 import re
@@ -26,10 +27,8 @@ class RuntimeStatus:
     status: str
 
 
-def parse_args():
+def parse_args() -> argparse.Namespace:
     """Parse CLI arguments for runtime monitoring checks."""
-
-    import argparse
 
     parser = argparse.ArgumentParser(
         description=(
@@ -61,6 +60,16 @@ def fetch_action_yaml(*, action_yaml_url: str) -> str:
     parsed = urlparse(action_yaml_url)
     if parsed.scheme != "https" or parsed.netloc != "raw.githubusercontent.com":
         raise RuntimeError("action_yaml_url must use https://raw.githubusercontent.com")
+    path_segments = [segment for segment in parsed.path.split("/") if segment]
+    if (
+        len(path_segments) < 4
+        or path_segments[0] != "actions"
+        or path_segments[1] != "dependency-review-action"
+        or path_segments[-1] != "action.yml"
+    ):
+        raise RuntimeError(
+            "action_yaml_url must target /actions/dependency-review-action/<ref>/action.yml"
+        )
 
     request = urllib.request.Request(
         action_yaml_url,
@@ -78,14 +87,49 @@ def fetch_action_yaml(*, action_yaml_url: str) -> str:
 def parse_runs_using(action_yaml: str) -> str | None:
     """Extract the `runs.using` runtime token from action.yml content."""
 
-    match = re.search(
-        r"^\s*using\s*:\s*['\"]?([A-Za-z0-9_.-]+)['\"]?\s*$",
-        action_yaml,
-        flags=re.MULTILINE,
-    )
-    if match is None:
-        return None
-    return match.group(1)
+    in_runs = False
+    runs_indent: int | None = None
+    block_scalar_indent: int | None = None
+
+    for raw_line in action_yaml.splitlines():
+        line_without_comment = raw_line.split("#", 1)[0].rstrip()
+        if not line_without_comment:
+            continue
+
+        indent = len(raw_line) - len(raw_line.lstrip())
+
+        if not in_runs:
+            if re.match(r"^\s*runs\s*:\s*$", line_without_comment):
+                in_runs = True
+                runs_indent = indent
+            continue
+
+        if indent <= (runs_indent or 0):
+            in_runs = False
+            runs_indent = None
+            block_scalar_indent = None
+            if re.match(r"^\s*runs\s*:\s*$", line_without_comment):
+                in_runs = True
+                runs_indent = indent
+            continue
+
+        if block_scalar_indent is not None:
+            if indent > block_scalar_indent:
+                continue
+            block_scalar_indent = None
+
+        if re.match(r"^\s*[A-Za-z0-9_-]+\s*:\s*[|>][-+0-9]*\s*$", line_without_comment):
+            block_scalar_indent = indent
+            continue
+
+        match = re.match(
+            r"^\s*using\s*:\s*(['\"]?)([A-Za-z0-9_.-]+)\1\s*$",
+            line_without_comment,
+        )
+        if match is not None:
+            return match.group(2)
+
+    return None
 
 
 def evaluate_runtime_status(
@@ -107,7 +151,7 @@ def evaluate_runtime_status(
 def _print_payload(payload: dict[str, object]) -> None:
     """Emit a stable JSON payload for workflow and local parsers."""
 
-    print(json.dumps(payload, sort_keys=True))
+    print(json.dumps(payload, sort_keys=True, ensure_ascii=False))
 
 
 def main() -> int:

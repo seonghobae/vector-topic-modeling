@@ -55,6 +55,9 @@ jobs:
               fh.write(f"- expected_runtime: `{payload.get('expected_runtime', 'unknown')}`\n")
               fh.write(f"- actual_runtime: `{payload.get('actual_runtime', 'unknown')}`\n")
               fh.write(f"- status: `{payload.get('status', 'unknown')}`\n")
+              message = payload.get("message")
+              if isinstance(message, str) and message:
+                  fh.write(f"- message: {json.dumps(message, ensure_ascii=False)}\n")
               if payload.get("status") == "ready":
                   fh.write(
                       "- next_action: update dependency-review action pin and remove runtime force workaround (Issue #45)\n"
