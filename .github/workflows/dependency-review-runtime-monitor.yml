@@ -64,8 +64,18 @@ jobs:
                   )
               elif payload.get("status") == "monitoring":
                   fh.write("- next_action: continue monitoring Issue #45\n")
+              elif payload.get("status") == "fetch-error":
+                  fh.write(
+                      "- next_action: retry monitor via workflow_dispatch and verify raw.githubusercontent.com availability before treating this as a monitor defect\n"
+                  )
+              elif payload.get("status") in {"parse-error", "unexpected-error"}:
+                  fh.write(
+                      "- next_action: repair runtime monitor parser/logic (non-retryable monitor failure)\n"
+                  )
               else:
-                  fh.write("- next_action: inspect fetch/parse error and repair monitor\n")
+                  fh.write(
+                      "- next_action: repair runtime monitor for unknown status payload\n"
+                  )
           PY
         env:
           MONITOR_RESULT: ${{ steps.runtime_check.outputs.result }}
@@ -79,7 +89,7 @@ jobs:
       - name: Fail when monitor execution errors
         if: steps.runtime_check.outputs.exit_code == '2'
         run: |
-          echo "Runtime monitor failed to fetch/parse upstream metadata."
+          echo "Runtime monitor exit_code=2: fetch-error => retry + availability check; parse-error/unexpected-error => repair monitor."
           exit 1
 
       - name: Fail on unexpected monitor exit code

@@ -94,6 +94,13 @@ def test_dependency_review_runtime_monitor_workflow_and_docs_are_aligned() -> No
     assert "steps.runtime_check.outputs.exit_code != '1'" in workflow
     assert "steps.runtime_check.outputs.exit_code != '2'" in workflow
     assert "- message:" in workflow
+    assert 'payload.get("status") == "fetch-error"' in workflow
+    assert "retry monitor via workflow_dispatch" in workflow
+    assert "raw.githubusercontent.com availability" in workflow
+    assert 'payload.get("status") in {"parse-error", "unexpected-error"}' in workflow
+    assert "repair runtime monitor parser/logic" in workflow
+    assert "fetch-error => retry + availability check" in workflow
+    assert "parse-error/unexpected-error => repair monitor" in workflow
 
     for relpath in [
         "ARCHITECTURE.md",
@@ -105,3 +112,7 @@ def test_dependency_review_runtime_monitor_workflow_and_docs_are_aligned() -> No
 
     security_doc = _read("docs/security/api-security-checklist.md")
     assert "Issue #45" in security_doc
+
+    harness_doc = _read("docs/engineering/harness-engineering.md")
+    assert "`fetch-error`: retry first" in harness_doc
+    assert "`parse-error` or `unexpected-error`: repair-focused path" in harness_doc

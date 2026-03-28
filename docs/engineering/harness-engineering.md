@@ -40,7 +40,11 @@
   - Exit code `0`: still monitoring (runtime mismatch; current expected state)
   - Exit code `1`: upstream runtime now matches expected Node24 (migration work
     should proceed per Issue #45)
-  - Exit code `2`: monitor fetch/parse error that requires workflow repair
+  - Exit code `2`: monitor execution error; classify by payload `status`:
+    - `fetch-error`: retry first (manual `workflow_dispatch` or next schedule)
+      and verify upstream/raw-host availability before code changes.
+    - `parse-error` or `unexpected-error`: repair-focused path (monitor
+      parser/logic/workflow needs correction).
 - `.github/workflows/dependency-review-runtime-monitor.yml` is the canonical
   scheduled/dispatch path for automated Issue #45 runtime-monitor evidence.
 - Branch protection on `main` requires pull-request-only merges, one

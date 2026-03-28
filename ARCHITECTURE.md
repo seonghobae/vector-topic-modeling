@@ -49,7 +49,8 @@ database storage, background jobs, XLSX export, and email delivery.
   approving review, and required checks.
 - `ci.yml` validates tests/builds, smoke-tests the installed wheel and
   CLI entrypoint, and `publish.yml` repeats that verification before the
-  release-to-PyPI path when credentials are configured.
+  release-to-PyPI path via PyPI Trusted Publishing (OIDC) in the `pypi`
+  environment.
 - `trivy.yml` runs Trivy filesystem scanning on every push and PR
   (plus a weekly schedule) and uploads SARIF results to GitHub Security.
 - `codeql.yml` performs CodeQL static analysis for Python on every push
@@ -61,7 +62,9 @@ database storage, background jobs, XLSX export, and email delivery.
   metadata consistently.
 - `dependency-review-runtime-monitor.yml` runs weekly (and on manual dispatch)
   to inspect `actions/dependency-review-action` upstream runtime metadata and
-  track the Node24 migration readiness path documented in Issue #45.
+  track the Node24 migration readiness path documented in Issue #45; summary
+  guidance classifies `fetch-error` as retry/availability and keeps
+  `parse-error`/`unexpected-error` on repair-focused paths.
 - `.github/dependabot.yml` is the canonical dependency-update automation
   baseline for `pip` and `github-actions` ecosystems.
 - `main` branch protection requires `workflow-lint`,

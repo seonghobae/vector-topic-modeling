@@ -89,6 +89,7 @@ def parse_runs_using(action_yaml: str) -> str | None:
 
     in_runs = False
     runs_indent: int | None = None
+    runs_child_indent: int | None = None
     block_scalar_indent: int | None = None
 
     for raw_line in action_yaml.splitlines():
@@ -102,15 +103,18 @@ def parse_runs_using(action_yaml: str) -> str | None:
             if re.match(r"^\s*runs\s*:\s*$", line_without_comment):
                 in_runs = True
                 runs_indent = indent
+                runs_child_indent = None
             continue
 
         if indent <= (runs_indent or 0):
             in_runs = False
             runs_indent = None
+            runs_child_indent = None
             block_scalar_indent = None
             if re.match(r"^\s*runs\s*:\s*$", line_without_comment):
                 in_runs = True
                 runs_indent = indent
+                runs_child_indent = None
             continue
 
         if block_scalar_indent is not None:
@@ -120,6 +124,11 @@ def parse_runs_using(action_yaml: str) -> str | None:
 
         if re.match(r"^\s*[A-Za-z0-9_-]+\s*:\s*[|>][-+0-9]*\s*$", line_without_comment):
             block_scalar_indent = indent
+            continue
+
+        if runs_child_indent is None:
+            runs_child_indent = indent
+        if indent != runs_child_indent:
             continue
 
         match = re.match(

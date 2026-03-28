@@ -77,6 +77,33 @@ def test_parse_runs_using_ignores_block_scalar_content() -> None:
     assert MODULE.parse_runs_using(action_yaml) == "node24"
 
 
+def test_parse_runs_using_ignores_nested_using_key_under_runs_steps() -> None:
+    action_yaml = (
+        "runs:\n"
+        "  steps:\n"
+        "    - name: Example\n"
+        "      with:\n"
+        "        using: node999\n"
+        "  main: dist/index.js\n"
+    )
+
+    assert MODULE.parse_runs_using(action_yaml) is None
+
+
+def test_parse_runs_using_prefers_top_level_runs_using_over_nested_using() -> None:
+    action_yaml = (
+        "runs:\n"
+        "  steps:\n"
+        "    - name: Example\n"
+        "      with:\n"
+        "        using: node999\n"
+        "  using: node24\n"
+        "  main: dist/index.js\n"
+    )
+
+    assert MODULE.parse_runs_using(action_yaml) == "node24"
+
+
 def test_parse_runs_using_returns_none_when_runs_has_no_using() -> None:
     action_yaml = "runs:\n  main: dist/index.js\n"
 

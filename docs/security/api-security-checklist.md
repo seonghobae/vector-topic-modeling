@@ -43,7 +43,9 @@ client in `src/vector_topic_modeling/providers/openai_compat.py`.
   at mutable ref `actions/dependency-review-action@v4`.
   - Exit code `0`: monitoring state (upstream still not Node24-native)
   - Exit code `1`: upstream now advertises Node24 runtime (migration action)
-  - Exit code `2`: fetch/parse failure in the monitoring path
+  - Exit code `2`: monitor execution error (see `status` field in payload)
+    - `fetch-error`: retry/availability path (upstream/raw-host transient)
+    - `parse-error` or `unexpected-error`: repair-focused monitor path
 - Review dependency-update PRs promptly and keep the lock file current via
   the normal `uv` workflow.
 - If a vulnerability has no patched upstream version, do not leave it as
