@@ -217,7 +217,7 @@ def test_parse_args_default_required_checks_match_main_branch_policy(
     monkeypatch.setattr(sys, "argv", ["pr_check_gate_classifier"])
 
     args = MODULE.parse_args()
-    parsed = {fragment.strip() for fragment in str(args.required_checks).split(",")}
+    parsed = set(MODULE.default_required_checks(args.base_branch))
 
     assert parsed == {
         "workflow-lint",
@@ -227,6 +227,49 @@ def test_parse_args_default_required_checks_match_main_branch_policy(
         "stability (py3.13)",
         "Enforce head branch policy",
     }
+
+
+def test_parse_args_accepts_base_branch_selector(monkeypatch) -> None:
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["pr_check_gate_classifier", "--base-branch", "dev"],
+    )
+
+    args = MODULE.parse_args()
+
+    assert args.base_branch == "dev"
+
+
+def test_default_required_checks_for_non_main_branch_excludes_main_only_gates() -> None:
+    assert set(MODULE.default_required_checks("dev")) == {
+        "workflow-lint",
+        "test-and-build (3.11)",
+        "test-and-build (3.12)",
+    }
+
+
+def test_main_uses_base_branch_defaults_when_required_checks_omitted(
+    monkeypatch, capsys
+) -> None:
+    payload = json.dumps(
+        [
+            {"name": "workflow-lint", "state": "success"},
+            {"name": "test-and-build (3.11)", "state": "success"},
+            {"name": "test-and-build (3.12)", "state": "success"},
+        ]
+    )
+    monkeypatch.setattr(
+        MODULE,
+        "parse_args",
+        lambda: SimpleNamespace(required_checks="", base_branch="dev"),
+    )
+    monkeypatch.setattr(MODULE, "_read_stdin", lambda: payload)
+
+    exit_code = MODULE.main()
+
+    assert exit_code == 0
+    assert "gate=PASS" in capsys.readouterr().out
 
 
 def test_main_returns_1_when_required_context_fails(monkeypatch, capsys) -> None:
