@@ -33,8 +33,8 @@ client in `src/vector_topic_modeling/providers/openai_compat.py`.
   (`comment-summary-in-pr: on-failure`) so transient non-blocking warnings do
   not drown out actionable review failures.
 - `dependency-review.yml` sets
-  `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true` to opt JavaScript actions into
-  Node.js 24 runtime ahead of the Node 20 GitHub Actions deprecation window.
+  `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true` to run JavaScript actions on the
+  Node.js 24 runtime required by this repository CI policy.
 - Review dependency-update PRs promptly and keep the lock file current via
   the normal `uv` workflow.
 - If a vulnerability has no patched upstream version, do not leave it as
