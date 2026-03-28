@@ -78,3 +78,9 @@ jobs:
         run: |
           echo "Runtime monitor failed to fetch/parse upstream metadata."
           exit 1
+
+      - name: Fail on unexpected monitor exit code
+        if: ${{ steps.runtime_check.outputs.exit_code != '0' && steps.runtime_check.outputs.exit_code != '1' && steps.runtime_check.outputs.exit_code != '2' }}
+        run: |
+          echo "Runtime monitor returned unexpected exit code: ${{ steps.runtime_check.outputs.exit_code }}"
+          exit 1
