@@ -7,6 +7,7 @@ import json
 import re
 import urllib.error
 import urllib.request
+from urllib.parse import urlparse
 
 MONITORED_ACTION_REF = "actions/dependency-review-action@v4"
 MONITORED_ACTION_YAML_URL = (
@@ -56,6 +57,10 @@ def parse_args():
 
 def fetch_action_yaml(*, action_yaml_url: str) -> str:
     """Fetch action metadata YAML from the upstream raw URL."""
+
+    parsed = urlparse(action_yaml_url)
+    if parsed.scheme != "https" or parsed.netloc != "raw.githubusercontent.com":
+        raise RuntimeError("action_yaml_url must use https://raw.githubusercontent.com")
 
     request = urllib.request.Request(
         action_yaml_url,
@@ -111,7 +116,7 @@ def main() -> int:
     args = parse_args()
     try:
         action_yaml = fetch_action_yaml(action_yaml_url=args.action_yaml_url)
-    except RuntimeError as err:
+    except Exception as err:
         _print_payload(
             {
                 "action_ref": args.action_ref,
