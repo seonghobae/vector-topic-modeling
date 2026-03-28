@@ -19,7 +19,7 @@ client in `src/vector_topic_modeling/providers/openai_compat.py`.
 - Keep `[project].license` in `pyproject.toml` as an SPDX expression string
   (for example `MIT`) and keep `license-files = ["LICENSE"]` so built artifacts
   emit explicit license metadata.
-- `dependency-review.yml` runs on every PR and fails on moderate-severity
+- `dependency-review.yml` runs on PRs targeting `main` and fails on moderate-severity
   (or above) known vulnerabilities in added or changed dependencies.
 - `dependency-submission.yml` submits dependency snapshots for `pip` and
   `uv.lock` so Dependency Review can evaluate PR-head dependency metadata.

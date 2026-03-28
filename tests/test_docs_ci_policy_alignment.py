@@ -174,3 +174,16 @@ def test_clusterfuzzlite_pr_workflow_uses_code_path_filtering() -> None:
         content = _read(relpath)
         assert "cflite_pr.yml" in content, relpath
         assert "cflite_batch.yml" in content, relpath
+
+
+def test_dependency_review_scope_docs_match_main_target_trigger() -> None:
+    workflow = _read(".github/workflows/dependency-review.yml")
+    assert "pull_request:" in workflow
+    assert "branches:" in workflow
+    assert "- main" in workflow
+
+    for relpath in ["ARCHITECTURE.md", "docs/security/api-security-checklist.md"]:
+        content = _read(relpath)
+        assert "PRs targeting `main`" in content, relpath
+        assert "every PR" not in content, relpath
+        assert "each PR" not in content, relpath

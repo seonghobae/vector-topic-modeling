@@ -65,7 +65,7 @@ database storage, background jobs, XLSX export, and email delivery.
   `.clusterfuzzlite/**`, and the workflow file) to avoid docs-only PR churn.
 - `cflite_batch.yml` runs scheduled/manual ClusterFuzzLite `batch` fuzzing
   for deeper continuous coverage outside the PR critical path.
-- `dependency-review.yml` reviews dependency changes in each PR and
+- `dependency-review.yml` reviews dependency changes in PRs targeting `main` and
   fails on moderate-severity (or above) known vulnerabilities.
 - `dependency-submission.yml` submits dependency snapshots for `pip` and
   `uv.lock` inputs so Dependency Review can consume PR-head dependency
