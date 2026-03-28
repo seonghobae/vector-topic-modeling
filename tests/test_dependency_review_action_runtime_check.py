@@ -65,7 +65,7 @@ def test_fetch_action_yaml_rejects_untrusted_url() -> None:
     else:
         raise AssertionError("expected RuntimeError")
 
-    assert "raw.githubusercontent.com" in message
+    assert message == "action_yaml_url must use https://raw.githubusercontent.com"
 
 
 def test_evaluate_runtime_status_marks_expected_runtime_as_ready() -> None:
