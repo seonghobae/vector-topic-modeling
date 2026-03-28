@@ -57,6 +57,17 @@ def test_parse_runs_using_handles_double_quotes() -> None:
     assert MODULE.parse_runs_using(action_yaml) == "node24"
 
 
+def test_fetch_action_yaml_rejects_untrusted_url() -> None:
+    try:
+        MODULE.fetch_action_yaml(action_yaml_url="https://example.com/action.yml")
+    except RuntimeError as err:
+        message = str(err)
+    else:
+        raise AssertionError("expected RuntimeError")
+
+    assert "raw.githubusercontent.com" in message
+
+
 def test_evaluate_runtime_status_marks_expected_runtime_as_ready() -> None:
     result = MODULE.evaluate_runtime_status(
         action_ref="actions/dependency-review-action@deadbeef",
@@ -143,6 +154,54 @@ def test_main_returns_2_when_runtime_cannot_be_parsed(monkeypatch, capsys) -> No
 
     assert exit_code == 2
     assert '"status": "parse-error"' in capsys.readouterr().out
+
+
+def test_main_returns_2_when_fetch_fails(monkeypatch, capsys) -> None:
+    monkeypatch.setattr(
+        MODULE,
+        "parse_args",
+        lambda: SimpleNamespace(
+            action_ref="actions/dependency-review-action@v4",
+            action_yaml_url="https://example.invalid/action.yml",
+            expected_runtime="node24",
+        ),
+    )
+
+    def _raise_fetch(*, action_yaml_url: str) -> str:
+        _ = action_yaml_url
+        raise RuntimeError("failed to fetch action metadata")
+
+    monkeypatch.setattr(MODULE, "fetch_action_yaml", _raise_fetch)
+
+    exit_code = MODULE.main()
+
+    assert exit_code == 2
+    assert '"status": "fetch-error"' in capsys.readouterr().out
+
+
+def test_main_returns_2_when_fetch_raises_non_runtime_error(
+    monkeypatch, capsys
+) -> None:
+    monkeypatch.setattr(
+        MODULE,
+        "parse_args",
+        lambda: SimpleNamespace(
+            action_ref="actions/dependency-review-action@v4",
+            action_yaml_url="https://example.invalid/action.yml",
+            expected_runtime="node24",
+        ),
+    )
+
+    def _raise_fetch(*, action_yaml_url: str) -> str:
+        _ = action_yaml_url
+        raise ValueError("unexpected")
+
+    monkeypatch.setattr(MODULE, "fetch_action_yaml", _raise_fetch)
+
+    exit_code = MODULE.main()
+
+    assert exit_code == 2
+    assert '"status": "fetch-error"' in capsys.readouterr().out
 
 
 def test_main_returns_2_on_unexpected_exception_with_structured_payload(
