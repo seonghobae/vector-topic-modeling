@@ -126,6 +126,7 @@ def test_ci_stability_workflow_covers_python_313_and_314() -> None:
     assert "branches: [main]" in workflow
     assert "push:" in workflow
     assert "schedule:" in workflow
+    assert '- cron: "23 3 * * 2"' in workflow
     assert 'python-version: "3.13"' in workflow
     assert 'python-version: "3.14"' in workflow
     assert "continue-on-error: ${{ matrix.experimental }}" in workflow
@@ -139,6 +140,8 @@ def test_pr_branch_guard_workflow_enforces_dev_to_main_policy() -> None:
     assert "pull_request:" in workflow
     assert "branches: [main]" in workflow
     assert "override:branch-guard" in workflow
+    assert re.search(r"actions/github-script@[0-9a-f]{40}", workflow) is not None
+    assert "actions/github-script@v7" not in workflow
     assert 'const isDev = head === "dev";' in workflow
     assert "const isHotfix = /^hotfix" in workflow
     assert "const isRelease = /^release" in workflow
