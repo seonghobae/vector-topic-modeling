@@ -12,17 +12,41 @@ _TOKEN_LIKE_RE = re.compile(
 
 
 def strip_nul(value: str) -> str:
-    """Remove NUL characters from an input string."""
+    """Remove NUL characters from an input string.
+
+    Args:
+        value: The input string to sanitize.
+
+    Returns:
+        The input string with all NUL (``\\x00``) characters removed.
+    """
     return value.replace("\x00", "")
 
 
 def clean_env(value: str | None) -> str:
-    """Normalize optional environment text to a stripped string."""
+    """Normalize optional environment text to a stripped string.
+
+    Args:
+        value: An optional environment variable value to normalize.
+
+    Returns:
+        An empty string when *value* is ``None``; otherwise *value* stripped
+        of leading and trailing whitespace.
+    """
     return ("" if value is None else value).strip()
 
 
 def redact_pii_and_secrets(value: str) -> str:
-    """Redact emails and token-like substrings from free-form text."""
+    """Redact emails and token-like substrings from free-form text.
+
+    Args:
+        value: The free-form text to sanitize.
+
+    Returns:
+        The sanitized text with email addresses replaced by
+        ``[REDACTED_EMAIL]`` and token-like substrings replaced by
+        ``[REDACTED_TOKEN]``.
+    """
     text = strip_nul(str(value or ""))
     if not text:
         return ""

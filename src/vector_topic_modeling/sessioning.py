@@ -10,12 +10,29 @@ _TOKEN_RE = re.compile(r"[A-Za-z0-9가-힣]{2,}")
 
 
 def _tokenize(text: str) -> list[str]:
-    """Extract lower-cased alphanumeric tokens used for heuristic scoring."""
+    """Extract lower-cased alphanumeric tokens used for heuristic scoring.
+
+    Args:
+        text: Free-form text to tokenize.
+
+    Returns:
+        List of lower-cased tokens matching the pattern
+        ``[A-Za-z0-9가-힣]{2,}``.
+    """
     return [token.lower() for token in _TOKEN_RE.findall(text or "") if token]
 
 
 def _candidate_score(*, question: str, response: str) -> tuple[int, int, int]:
-    """Score QA content by token diversity, max token length, and text length."""
+    """Score QA content by token diversity, max token length, and text length.
+
+    Args:
+        question: User question text.
+        response: Assistant response text.
+
+    Returns:
+        ``(unique_token_count, max_token_length, total_char_length)`` tuple
+        used for heuristic candidate ranking.
+    """
     q = (question or "").strip()
     r = (response or "").strip()
     tokens = _tokenize(f"{q} {r}")
@@ -31,7 +48,20 @@ def pick_session_main_digest(
     *,
     selector: Callable[[str, Sequence[Mapping[str, object]]], str | None] | None = None,
 ) -> str | None:
-    """Select a representative digest for one session's rows."""
+    """Select a representative digest for one session's rows.
+
+    Args:
+        session_rows: Non-empty sequence of prepared rows sharing the same
+            session identifier.
+        selector: Optional custom callable that receives the session id and
+            row sequence and returns a preferred digest hex.  Falls back to
+            heuristic scoring when ``None`` or when the returned digest is not
+            present in *session_rows*.
+
+    Returns:
+        Digest hex string of the chosen representative row, or ``None`` when
+        *session_rows* is empty or contains no valid digest.
+    """
     if not session_rows:
         return None
     session_id = str(session_rows[0].get("session_id") or "").strip()
@@ -67,7 +97,15 @@ def pick_session_main_digest(
 def build_digest_counts_all_pairs(
     rows: Sequence[Mapping[str, object]],
 ) -> dict[str, int]:
-    """Aggregate non-negative counts per digest across all rows."""
+    """Aggregate non-negative counts per digest across all rows.
+
+    Args:
+        rows: Sequence of row mappings each containing ``digest_hex`` and
+            ``count`` fields.
+
+    Returns:
+        Mapping from digest hex to total non-negative count across all rows.
+    """
     out: dict[str, int] = {}
     for row in rows:
         digest = str(row.get("digest_hex") or "").strip()
@@ -98,7 +136,18 @@ def build_digest_counts_session_main_pair(
     *,
     selector: Callable[[str, Sequence[Mapping[str, object]]], str | None] | None = None,
 ) -> dict[str, int]:
-    """Count one selected representative digest per non-empty session."""
+    """Count one selected representative digest per non-empty session.
+
+    Args:
+        rows: Sequence of row mappings each containing ``session_id``,
+            ``digest_hex``, and ``count`` fields.
+        selector: Optional custom callable forwarded to
+            :func:`pick_session_main_digest` for each session.
+
+    Returns:
+        Mapping from representative digest hex to the number of sessions
+        it represents.
+    """
     by_session: dict[str, list[Mapping[str, object]]] = defaultdict(list)
     for row in rows:
         session_id = str(row.get("session_id") or "").strip()
@@ -116,7 +165,16 @@ def aggregate_session_topic_counts(
     rows: Iterable[dict[str, object]],
     digest_to_topic: dict[str, str],
 ) -> dict[tuple[str, str], int]:
-    """Aggregate positive counts by ``(session_id, topic_id)``."""
+    """Aggregate positive counts by ``(session_id, topic_id)``.
+
+    Args:
+        rows: Iterable of row dicts with ``session_id``, ``digest_hex``, and
+            ``count`` fields.
+        digest_to_topic: Mapping from digest hex to topic identifier.
+
+    Returns:
+        Dict keyed by ``(session_id, topic_id)`` with summed positive counts.
+    """
     out: dict[tuple[str, str], int] = {}
     for row in rows:
         session_id = str(row.get("session_id") or "").strip()
@@ -155,7 +213,20 @@ def pick_sample_sessions_for_topics(
     max_per_topic: int,
     max_total: int,
 ) -> dict[str, list[str]]:
-    """Pick deterministic sample session ids per topic under global caps."""
+    """Pick deterministic sample session ids per topic under global caps.
+
+    Args:
+        topic_sessions: Mapping from topic id to a list of
+            ``(session_id, count)`` pairs.
+        max_per_topic: Maximum sessions to include per topic.  ``0`` disables
+            the per-topic cap.
+        max_total: Maximum sessions to include across all topics.  ``0``
+            disables the global cap.
+
+    Returns:
+        Mapping from topic id to a list of sampled session id strings, ordered
+        by descending count then ascending session id.
+    """
     per_topic = max(0, int(max_per_topic))
     total_cap = max(0, int(max_total))
     remaining = total_cap

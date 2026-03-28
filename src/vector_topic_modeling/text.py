@@ -11,7 +11,18 @@ def build_qa_pair_text(
     *,
     max_chars: int = 4000,
 ) -> str:
-    """Build a redacted ``User/Assistant`` text block with length capping."""
+    """Build a redacted ``User/Assistant`` text block with length capping.
+
+    Args:
+        user_question: Raw user question text; ``None`` is treated as empty.
+        assistant_response: Raw assistant response text; ``None`` is treated
+            as empty.
+        max_chars: Maximum character length of the resulting string.
+
+    Returns:
+        A ``"User: …\\nAssistant: …"`` block with PII/secrets redacted and
+        truncated to *max_chars* characters, appending ``"…"`` when truncated.
+    """
     uq = redact_pii_and_secrets(str(user_question or "")).strip()
     ar = redact_pii_and_secrets(str(assistant_response or "")).strip()
     out = f"User: {uq}\nAssistant: {ar}".strip()
@@ -25,6 +36,15 @@ def build_qa_pair_text(
 
 
 def normalize_text(value: str | None, *, max_chars: int = 4000) -> str:
-    """Redact and trim text to the requested maximum character length."""
+    """Redact and trim text to the requested maximum character length.
+
+    Args:
+        value: Raw text to normalize; ``None`` is treated as empty.
+        max_chars: Maximum number of characters to retain.
+
+    Returns:
+        Sanitized text with PII/secrets redacted, stripped of surrounding
+        whitespace, and truncated to *max_chars* characters.
+    """
     text = redact_pii_and_secrets(str(value or "")).strip()
     return text[:max_chars].rstrip() if len(text) > max_chars else text

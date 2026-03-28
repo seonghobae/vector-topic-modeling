@@ -14,7 +14,28 @@ from vector_topic_modeling.text import build_qa_pair_text, normalize_text
 
 @dataclass(frozen=True)
 class TopicDocumentIngestionConfig:
-    """Configurable field mapping rules for converting source rows to documents."""
+    """Configurable field mapping rules for converting source rows to documents.
+
+    Attributes:
+        id_fields: Candidate field names used to resolve a document identifier.
+        text_fields: Candidate field names for the primary text body.
+        payload_fields: Candidate field names for structured payload text.
+        content_fields: Optional field names whose values are concatenated as
+            labelled content blocks.
+        question_fields: Candidate field names for the user question text.
+        response_fields: Candidate field names for the assistant response text.
+        session_id_fields: Candidate field names for the session identifier.
+        session_key_fields: Ordered field names used to synthesize a composite
+            session identifier when no direct session-id field is present.
+        count_field: Name of the field holding the document occurrence count.
+        column_value_path: Optional key of a list of column/value records to
+            promote into top-level row fields.
+        column_name_field: Name of the column-name sub-field in column/value
+            records.
+        column_value_field: Name of the value sub-field in column/value
+            records.
+        max_text_chars: Maximum character length to which text is trimmed.
+    """
 
     id_fields: tuple[str, ...] = ("id", "document_id")
     text_fields: tuple[str, ...] = ("text",)
@@ -32,7 +53,19 @@ class TopicDocumentIngestionConfig:
 
 
 def load_ingestion_config(path: str | Path | None) -> TopicDocumentIngestionConfig:
-    """Load ingestion mapping config from JSON, or defaults when omitted."""
+    """Load ingestion mapping config from JSON, or defaults when omitted.
+
+    Args:
+        path: Filesystem path to a JSON ingestion-config file, or ``None``
+            to use built-in defaults.
+
+    Returns:
+        A :class:`TopicDocumentIngestionConfig` with values from the file or
+        all-default field mappings when *path* is ``None``.
+
+    Raises:
+        TypeError: When the JSON file root is not an object.
+    """
     if path is None:
         return TopicDocumentIngestionConfig()
     parsed = json.loads(Path(path).read_text(encoding="utf-8"))
@@ -73,7 +106,19 @@ def load_jsonl_topic_documents(
     *,
     config: TopicDocumentIngestionConfig | None = None,
 ) -> list[TopicDocument]:
-    """Parse a JSONL file and map each object row into a topic document."""
+    """Parse a JSONL file and map each object row into a topic document.
+
+    Args:
+        path: Filesystem path to the ``.jsonl`` source file.
+        config: Optional ingestion config overriding field-mapping defaults.
+
+    Returns:
+        Ordered list of :class:`TopicDocument` instances, one per non-blank
+        line in the file.
+
+    Raises:
+        ValueError: When a JSONL line is not a JSON object.
+    """
     effective = config or TopicDocumentIngestionConfig()
     documents: list[TopicDocument] = []
     for raw_line in path.read_text(encoding="utf-8").splitlines():
@@ -95,7 +140,18 @@ def topic_document_from_row(
     row_index: int,
     config: TopicDocumentIngestionConfig | None = None,
 ) -> TopicDocument:
-    """Convert one generic mapping row into a normalized ``TopicDocument``."""
+    """Convert one generic mapping row into a normalized ``TopicDocument``.
+
+    Args:
+        row: Source data row as a key-to-value mapping.
+        row_index: Zero-based position of the row in the source file, used as
+            a fallback document identifier.
+        config: Optional ingestion config controlling field resolution.
+
+    Returns:
+        A :class:`TopicDocument` with text, session, and count fields resolved
+        from *row* according to *config*.
+    """
     effective = config or TopicDocumentIngestionConfig()
     materialized = _materialize_column_value_fields(row=row, config=effective)
     question = _first_non_empty(materialized, effective.question_fields)
@@ -128,7 +184,17 @@ def _resolve_document_id(
     row_index: int,
     config: TopicDocumentIngestionConfig,
 ) -> str:
-    """Resolve document id from configured fields or fallback to row index."""
+    """Resolve document id from configured fields or fallback to row index.
+
+    Args:
+        row: Source data row to inspect.
+        row_index: Fallback index used when no id field is populated.
+        config: Ingestion config specifying candidate id field names.
+
+    Returns:
+        String document identifier from the first populated id field, or the
+        string representation of *row_index* when no such field exists.
+    """
     explicit = _first_non_empty(row, config.id_fields)
     return explicit if explicit else str(row_index)
 
@@ -138,7 +204,17 @@ def _resolve_session_id(
     *,
     config: TopicDocumentIngestionConfig,
 ) -> str | None:
-    """Resolve a session id directly or synthesize one from key fields."""
+    """Resolve a session id directly or synthesize one from key fields.
+
+    Args:
+        row: Source data row to inspect.
+        config: Ingestion config specifying session-id and session-key fields.
+
+    Returns:
+        String session identifier, a synthesized ``pk:…`` composite when key
+        fields are configured, or ``None`` when no session identity can be
+        determined.
+    """
     explicit = _first_non_empty(row, config.session_id_fields)
     if explicit:
         return explicit
@@ -165,7 +241,18 @@ def _resolve_text(
     response: str,
     config: TopicDocumentIngestionConfig,
 ) -> str:
-    """Resolve model text using direct text, field bundles, payload, or QA fallback."""
+    """Resolve model text using direct text, field bundles, payload, or QA fallback.
+
+    Args:
+        row: Source data row to inspect.
+        question: Pre-resolved question string (may be empty).
+        response: Pre-resolved response string (may be empty).
+        config: Ingestion config controlling text-resolution priority.
+
+    Returns:
+        Normalized, length-capped text string derived from the most specific
+        available source in the row.
+    """
     direct_text = _first_non_empty(row, config.text_fields)
     if direct_text:
         return normalize_text(direct_text, max_chars=config.max_text_chars)
@@ -198,7 +285,17 @@ def _materialize_column_value_fields(
     row: Mapping[str, object],
     config: TopicDocumentIngestionConfig,
 ) -> dict[str, object]:
-    """Promote nested column/value records into top-level row fields."""
+    """Promote nested column/value records into top-level row fields.
+
+    Args:
+        row: Source data row to transform.
+        config: Ingestion config with ``column_value_path``,
+            ``column_name_field``, and ``column_value_field`` settings.
+
+    Returns:
+        A new dict with the original row fields plus any column/value entries
+        promoted from the nested list, if present.
+    """
     out = dict(row)
     source_key = config.column_value_path
     if not source_key:
@@ -217,7 +314,16 @@ def _materialize_column_value_fields(
 
 
 def _first_non_empty(row: Mapping[str, object], fields: tuple[str, ...]) -> str:
-    """Return first non-empty rendered value from candidate fields."""
+    """Return first non-empty rendered value from candidate fields.
+
+    Args:
+        row: Source data row to search.
+        fields: Ordered tuple of candidate field names.
+
+    Returns:
+        Stripped string value of the first field that is non-empty after
+        rendering, or an empty string when no such field exists.
+    """
     for field in fields:
         rendered = _stringify(row.get(field)).strip()
         if rendered:
@@ -226,7 +332,17 @@ def _first_non_empty(row: Mapping[str, object], fields: tuple[str, ...]) -> str:
 
 
 def _coerce_count(value: Any, *, default: int) -> int:
-    """Coerce a count-like input to ``int`` with safe fallback."""
+    """Coerce a count-like input to ``int`` with safe fallback.
+
+    Args:
+        value: Raw value to interpret as a count (may be ``bool``, ``int``,
+            ``float``, ``str``, or any other type).
+        default: Fallback count used for booleans, unparseable strings, and
+            unrecognised types.
+
+    Returns:
+        Integer count, or *default* when coercion is not possible.
+    """
     if isinstance(value, bool):
         return default
     if isinstance(value, int):
@@ -242,7 +358,16 @@ def _coerce_count(value: Any, *, default: int) -> int:
 
 
 def _stringify(value: object) -> str:
-    """Render structured values into deterministic string form."""
+    """Render structured values into deterministic string form.
+
+    Args:
+        value: Arbitrary Python object to convert.
+
+    Returns:
+        String representation of *value*.  ``None`` maps to ``""``, numerics
+        are stringified directly, and lists/dicts are serialized as compact
+        JSON with sorted keys.
+    """
     if value is None:
         return ""
     if isinstance(value, str):
@@ -255,7 +380,18 @@ def _stringify(value: object) -> str:
 
 
 def _to_field_tuple(value: object, *, fallback: tuple[str, ...]) -> tuple[str, ...]:
-    """Normalize configured field names into a non-empty tuple."""
+    """Normalize configured field names into a non-empty tuple.
+
+    Args:
+        value: Raw config value that may be a string, list of strings, or
+            ``None``.
+        fallback: Tuple to return when *value* is ``None`` or produces no
+            non-empty fields.
+
+    Returns:
+        Tuple of stripped, non-empty field name strings, or *fallback* when
+        the result would otherwise be empty.
+    """
     if value is None:
         return fallback
     if isinstance(value, str):
@@ -268,7 +404,15 @@ def _to_field_tuple(value: object, *, fallback: tuple[str, ...]) -> tuple[str, .
 
 
 def _opt_text(value: object) -> str | None:
-    """Normalize optional config text and return ``None`` when blank."""
+    """Normalize optional config text and return ``None`` when blank.
+
+    Args:
+        value: Raw config value to normalize.
+
+    Returns:
+        Stripped non-empty string, or ``None`` when *value* is ``None`` or
+        produces an empty string after stripping.
+    """
     if value is None:
         return None
     text = str(value).strip()

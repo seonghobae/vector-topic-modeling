@@ -18,7 +18,12 @@ from vector_topic_modeling.providers.openai_compat import (
 
 
 def build_parser() -> argparse.ArgumentParser:
-    """Build and return the argument parser for the CLI."""
+    """Build and return the argument parser for the CLI.
+
+    Returns:
+        A configured :class:`argparse.ArgumentParser` instance for the
+        ``vector-topic-modeling`` program.
+    """
     parser = argparse.ArgumentParser(
         prog="vector-topic-modeling",
         description="Standalone embedding-based topic modeling",
@@ -43,7 +48,16 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def validate_args(parser: argparse.ArgumentParser, args: argparse.Namespace) -> None:
-    """Validate parsed CLI arguments before executing commands."""
+    """Validate parsed CLI arguments before executing commands.
+
+    Args:
+        parser: The argument parser used to emit validation errors.
+        args: The parsed namespace produced by *parser*.
+
+    Raises:
+        SystemExit: Via :meth:`argparse.ArgumentParser.error` when any
+            argument constraint is violated.
+    """
     if args.command == "cluster":
         if args.min_topics < 1:
             parser.error("--min-topics must be >= 1")
@@ -56,7 +70,19 @@ def validate_args(parser: argparse.ArgumentParser, args: argparse.Namespace) -> 
 
 
 def main(argv: list[str] | None = None) -> int:
-    """Execute the CLI program."""
+    """Execute the CLI program.
+
+    Args:
+        argv: Optional list of command-line argument strings.  Defaults to
+            ``sys.argv[1:]`` when ``None``.
+
+    Returns:
+        Exit code ``0`` on success.
+
+    Raises:
+        ValueError: When an unsupported command is requested or required
+            arguments are missing.
+    """
     parser = build_parser()
     args = parser.parse_args(argv)
     validate_args(parser, args)
@@ -107,6 +133,15 @@ def _load_jsonl(
     *,
     ingestion_config_path: str | None = None,
 ) -> list[TopicDocument]:
-    """Load TopicDocuments from a JSONL file, applying optional ingestion config."""
+    """Load TopicDocuments from a JSONL file, applying optional ingestion config.
+
+    Args:
+        path: Filesystem path to the ``.jsonl`` input file.
+        ingestion_config_path: Optional path to a JSON ingestion-config file.
+            Defaults to built-in field-mapping rules when ``None``.
+
+    Returns:
+        A list of :class:`TopicDocument` instances parsed from the file.
+    """
     config = load_ingestion_config(ingestion_config_path)
     return load_jsonl_topic_documents(path, config=config)

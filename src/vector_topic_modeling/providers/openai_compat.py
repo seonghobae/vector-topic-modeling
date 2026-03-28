@@ -14,7 +14,15 @@ from vector_topic_modeling._sanitize import clean_env, strip_nul
 
 @dataclass(frozen=True)
 class OpenAICompatConfig:
-    """Connection settings for an OpenAI-compatible embeddings endpoint."""
+    """Connection settings for an OpenAI-compatible embeddings endpoint.
+
+    Attributes:
+        base_url: Base HTTP(S) URL of the embeddings service (no trailing
+            slash).
+        api_key: Bearer token sent in the ``Authorization`` header.
+        model: Name of the embedding model to request.
+        timeout_seconds: HTTP request timeout in seconds.
+    """
 
     base_url: str
     api_key: str
@@ -25,7 +33,23 @@ class OpenAICompatConfig:
 def parse_embedding_response_data(
     *, data: list[dict[str, Any]], expected_count: int
 ) -> list[list[float]]:
-    """Validate and reorder embedding response items by their index field."""
+    """Validate and reorder embedding response items by their index field.
+
+    Args:
+        data: List of embedding response items, each containing ``"index"``
+            and ``"embedding"`` fields.
+        expected_count: Expected number of embeddings matching the request
+            input count.
+
+    Returns:
+        List of embedding vectors ordered by their ``index`` field.
+
+    Raises:
+        ValueError: When any item has a missing or out-of-range ``index``,
+            a missing ``embedding``, a dimensionality mismatch between items,
+            non-numeric embedding values, or when the total count of
+            embeddings does not match *expected_count*.
+    """
     indexed: dict[int, list[float]] = {}
     expected_dim: int | None = None
     for item in data:
@@ -56,7 +80,15 @@ class OpenAICompatEmbeddingProvider:
     """Embedding provider that calls an OpenAI-compatible HTTP API."""
 
     def __init__(self, config: OpenAICompatConfig) -> None:
-        """Validate and normalize provider configuration."""
+        """Validate and normalize provider configuration.
+
+        Args:
+            config: Connection settings for the embeddings endpoint.
+
+        Raises:
+            ValueError: When ``config.base_url`` is not a valid ``http(s)``
+                URL.
+        """
         parsed = urlparse(clean_env(config.base_url))
         if parsed.scheme not in {"http", "https"} or not parsed.netloc:
             raise ValueError("base_url must be a valid http(s) URL")
@@ -68,7 +100,20 @@ class OpenAICompatEmbeddingProvider:
         )
 
     def embed(self, texts: list[str]) -> list[list[float]]:
-        """Fetch embeddings for input texts using the configured endpoint."""
+        """Fetch embeddings for input texts using the configured endpoint.
+
+        Args:
+            texts: Ordered list of text strings to embed.
+
+        Returns:
+            List of embedding vectors in the same order as *texts*, each a
+            list of floats.  Returns an empty list when *texts* is empty.
+
+        Raises:
+            ValueError: When the HTTP request fails, the response body is
+                malformed, or the returned embedding count or dimensionality
+                does not match the request.
+        """
         if not texts:
             return []
         payload = json.dumps(

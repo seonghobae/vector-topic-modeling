@@ -10,7 +10,16 @@ from typing import TypedDict
 
 
 def _top_share_in_prefix(clusters: list[Cluster], *, limit: int) -> tuple[int, float]:
-    """Return total count and dominant-share among the first ``limit`` clusters."""
+    """Return total count and dominant-share among the first ``limit`` clusters.
+
+    Args:
+        clusters: Ordered list of clusters to evaluate.
+        limit: Maximum number of clusters from the front of the list to consider.
+
+    Returns:
+        A ``(total, share)`` tuple where *total* is the combined document count
+        of the prefix and *share* is the fraction held by the largest cluster.
+    """
     n = max(int(limit), 0)
     prefix = clusters[:n] if n else []
     counts = [max(int(cluster.total_count), 0) for cluster in prefix]
@@ -21,13 +30,30 @@ def _top_share_in_prefix(clusters: list[Cluster], *, limit: int) -> tuple[int, f
 
 
 def _stable_cluster_sort_key(cluster: Cluster) -> tuple[int, str]:
-    """Build a deterministic sort key by size then lexical tie-break."""
+    """Build a deterministic sort key by size then lexical tie-break.
+
+    Args:
+        cluster: The cluster whose sort key should be derived.
+
+    Returns:
+        A ``(negated_total_count, lexically_smallest_text)`` tuple that
+        produces a stable descending-by-size ordering when used with
+        :func:`list.sort`.
+    """
     tie = min((str(text) for text in cluster.texts), default="")
     return (-int(cluster.total_count), tie)
 
 
 def _cluster_stats(clusters: list[Cluster]) -> tuple[int, float]:
-    """Compute cluster count and global share of the largest cluster."""
+    """Compute cluster count and global share of the largest cluster.
+
+    Args:
+        clusters: List of clusters to evaluate.
+
+    Returns:
+        A ``(count, top_share)`` tuple where *count* is the number of clusters
+        and *top_share* is the fraction of total documents in the largest cluster.
+    """
     if not clusters:
         return 0, 0.0
     counts = [max(int(cluster.total_count), 0) for cluster in clusters]
@@ -38,7 +64,16 @@ def _cluster_stats(clusters: list[Cluster]) -> tuple[int, float]:
 
 
 def cosine_similarity(a: list[float], b: list[float]) -> float:
-    """Compute cosine similarity for two equal-length vectors."""
+    """Compute cosine similarity for two equal-length vectors.
+
+    Args:
+        a: First dense embedding vector.
+        b: Second dense embedding vector; must be the same length as *a*.
+
+    Returns:
+        Cosine similarity in ``[-1.0, 1.0]``, or ``0.0`` when either input is
+        empty, the lengths differ, or a vector has zero norm.
+    """
     if not a or not b or len(a) != len(b):
         return 0.0
     dot = 0.0
@@ -55,7 +90,13 @@ def cosine_similarity(a: list[float], b: list[float]) -> float:
 
 @dataclass(frozen=True)
 class Cluster:
-    """A clustered group of texts with centroid and aggregate count."""
+    """A clustered group of texts with centroid and aggregate count.
+
+    Attributes:
+        centroid: Averaged embedding vector representing this cluster.
+        texts: Deduplicated text strings assigned to this cluster.
+        total_count: Aggregate document count across all member texts.
+    """
 
     centroid: list[float]
     texts: list[str]
@@ -63,7 +104,15 @@ class Cluster:
 
 
 class AdaptiveGreedyClusterResult(TypedDict):
-    """Result payload for adaptive greedy clustering."""
+    """Result payload for adaptive greedy clustering.
+
+    Attributes:
+        clusters: Final cluster list produced by the search.
+        chosen_threshold: Similarity threshold that was selected.
+        cluster_count: Number of clusters in the result.
+        top_cluster_share: Share held by the largest cluster.
+        ok: ``True`` when all constraints were fully satisfied.
+    """
 
     clusters: list[Cluster]
     chosen_threshold: float
@@ -73,7 +122,21 @@ class AdaptiveGreedyClusterResult(TypedDict):
 
 
 class RescueDisplayDominanceResult(TypedDict):
-    """Result payload for dominance-rescue post-processing."""
+    """Result payload for dominance-rescue post-processing.
+
+    Attributes:
+        clusters: Cluster list after the rescue pass.
+        rescued: ``True`` when the display share was reduced.
+        attempts: Number of threshold candidates evaluated.
+        rescue_threshold: Threshold that produced the best improvement, or
+            ``None`` when no improvement was found.
+        cluster_count_before: Cluster count before the rescue pass.
+        cluster_count_after: Cluster count after the rescue pass.
+        top_cluster_share_before: Top-cluster share across all clusters before.
+        top_cluster_share_after: Top-cluster share across all clusters after.
+        display_top_share_before: Top-cluster share in the display prefix before.
+        display_top_share_after: Top-cluster share in the display prefix after.
+    """
 
     clusters: list[Cluster]
     rescued: bool
@@ -90,7 +153,19 @@ class RescueDisplayDominanceResult(TypedDict):
 def _avg_vectors(
     *, prev_centroid: list[float], new_vector: list[float], prev_weight: float
 ) -> list[float]:
-    """Update a centroid with one additional vector using weighted averaging."""
+    """Update a centroid with one additional vector using weighted averaging.
+
+    Args:
+        prev_centroid: Current centroid vector.
+        new_vector: New member vector to incorporate.
+        prev_weight: Weight to assign to *prev_centroid* relative to
+            *new_vector* (weight 1.0).
+
+    Returns:
+        Updated centroid vector.  Returns *prev_centroid* unchanged when the
+        two vectors have different lengths, and returns a copy of *new_vector*
+        when *prev_centroid* is empty.
+    """
     if not prev_centroid:
         return list(new_vector)
     if len(prev_centroid) != len(new_vector):
@@ -109,7 +184,18 @@ def greedy_cluster(
     similarity_threshold: float,
     max_clusters: int | None = None,
 ) -> list[Cluster]:
-    """Cluster texts greedily by first centroid crossing the similarity threshold."""
+    """Cluster texts greedily by first centroid crossing the similarity threshold.
+
+    Args:
+        items: Iterable of ``(text, vector, count)`` triples to cluster.
+        similarity_threshold: Minimum cosine similarity to merge into an
+            existing cluster.  Clamped to ``[0.0, 1.0]``.
+        max_clusters: Optional hard cap on the number of clusters.  When the
+            cap is reached, new items are assigned to their closest centroid.
+
+    Returns:
+        List of :class:`Cluster` objects in insertion order.
+    """
     threshold = min(max(float(similarity_threshold), 0.0), 1.0)
     centroids: list[list[float]] = []
     members: list[list[str]] = []
@@ -164,7 +250,21 @@ def adaptive_greedy_cluster(
     step: float = 0.02,
     tries: int = 6,
 ) -> AdaptiveGreedyClusterResult:
-    """Search thresholds to satisfy topic-count and top-share constraints."""
+    """Search thresholds to satisfy topic-count and top-share constraints.
+
+    Args:
+        items: Iterable of ``(text, vector, count)`` triples to cluster.
+        initial_threshold: Starting cosine-similarity threshold.
+        max_top_share: Maximum allowed fractional share for the largest cluster.
+        min_clusters: Minimum acceptable cluster count.
+        max_clusters: Maximum acceptable cluster count.
+        step: Threshold increment applied on each iteration.
+        tries: Maximum number of threshold candidates to evaluate.
+
+    Returns:
+        An :class:`AdaptiveGreedyClusterResult` dict.  The ``ok`` field is
+        ``True`` when a threshold satisfying all constraints was found.
+    """
     threshold = float(initial_threshold)
     max_share = float(max_top_share)
     min_k = max(int(min_clusters), 1)
@@ -225,7 +325,23 @@ def rescue_display_dominance(
     step: float = 0.02,
     tries: int = 6,
 ) -> RescueDisplayDominanceResult:
-    """Split a dominant first cluster to reduce top-share in display prefix."""
+    """Split a dominant first cluster to reduce top-share in display prefix.
+
+    Args:
+        clusters: Input cluster list sorted by descending size.
+        items_by_text: Mapping from text to ``(vector, count)`` for
+            re-clustering.
+        initial_threshold: Baseline cosine-similarity threshold.
+        max_display_share: Target maximum share for the leading cluster in the
+            display prefix.
+        display_limit: Number of clusters in the display prefix to evaluate.
+        step: Threshold increment applied on each rescue attempt.
+        tries: Maximum number of rescue attempts.
+
+    Returns:
+        A :class:`RescueDisplayDominanceResult` dict describing before/after
+        cluster statistics and whether the rescue reduced display dominance.
+    """
     in_clusters = list(clusters or [])
     in_clusters.sort(key=_stable_cluster_sort_key)
     cluster_count_before, top_share_before = _cluster_stats(in_clusters)
@@ -298,7 +414,20 @@ def rescue_display_dominance(
 def stable_topic_id(
     *, sample_sha256_hex: list[str], embedding_model: str, similarity_threshold: float
 ) -> str:
-    """Derive a deterministic short topic identifier from stable cluster metadata."""
+    """Derive a deterministic short topic identifier from stable cluster metadata.
+
+    Args:
+        sample_sha256_hex: Sorted list of SHA-256 digest hex strings sampled
+            from cluster member documents.
+        embedding_model: Name of the embedding model used to produce the
+            vectors.
+        similarity_threshold: Cosine-similarity threshold used during
+            clustering.
+
+    Returns:
+        A 12-character hexadecimal prefix of the SHA-256 hash over the
+        serialized metadata payload.
+    """
     payload = {
         "v": 1,
         "sample_sha256": list(sample_sha256_hex),
@@ -315,7 +444,18 @@ def match_clusters_by_centroid(
     previous_clusters: list[Cluster],
     match_threshold: float,
 ) -> dict[int, int]:
-    """Greedily match current clusters to previous clusters by centroid similarity."""
+    """Greedily match current clusters to previous clusters by centroid similarity.
+
+    Args:
+        current_clusters: Clusters from the current run (indexed as keys).
+        previous_clusters: Clusters from a prior run (indexed as values).
+        match_threshold: Minimum cosine similarity for a valid match.
+
+    Returns:
+        Mapping from current-cluster index to previous-cluster index.  An
+        index of ``-1`` means no sufficiently similar previous cluster was
+        found.
+    """
     threshold = min(max(float(match_threshold), 0.0), 1.0)
     pairs: list[tuple[float, int, int]] = []
     for i, current in enumerate(current_clusters):
