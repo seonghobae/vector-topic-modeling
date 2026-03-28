@@ -35,6 +35,15 @@ client in `src/vector_topic_modeling/providers/openai_compat.py`.
 - `dependency-review.yml` sets
   `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true` to run JavaScript actions on the
   Node.js 24 runtime required by this repository CI policy.
+- `.github/workflows/dependency-review-runtime-monitor.yml` runs on a weekly
+  schedule (and manual dispatch) to inspect upstream dependency-review action
+  runtime metadata and maintain visibility for Issue #45.
+- `scripts/review_checks/dependency_review_action_runtime_check.py` is the
+  canonical monitor script for checking upstream `runs.using` runtime metadata
+  at mutable ref `actions/dependency-review-action@v4`.
+  - Exit code `0`: monitoring state (upstream still not Node24-native)
+  - Exit code `1`: upstream now advertises Node24 runtime (migration action)
+  - Exit code `2`: fetch/parse failure in the monitoring path
 - Review dependency-update PRs promptly and keep the lock file current via
   the normal `uv` workflow.
 - If a vulnerability has no patched upstream version, do not leave it as
