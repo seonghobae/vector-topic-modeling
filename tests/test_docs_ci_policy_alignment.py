@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import re
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -74,3 +75,44 @@ def test_ci_runs_docstring_coverage_step_once_for_python_311() -> None:
     assert "if: matrix.python-version == '3.11'" in workflow
     assert workflow.count("name: Report and verify docstring coverage") == 1
     assert workflow.count("if: matrix.python-version == '3.11'") == 1
+
+
+def test_dependency_review_runtime_monitor_workflow_and_docs_are_aligned() -> None:
+    workflow = _read(".github/workflows/dependency-review-runtime-monitor.yml")
+
+    assert "name: Dependency Review Runtime Monitor" in workflow
+    assert "schedule:" in workflow
+    assert "workflow_dispatch:" in workflow
+    assert "scripts/review_checks/dependency_review_action_runtime_check.py" in workflow
+    assert "actions/dependency-review-action@v4" in workflow
+    assert (
+        re.search(r"actions/dependency-review-action@[0-9a-f]{40}\b", workflow) is None
+    )
+    assert "--expected-runtime node24" in workflow
+    assert "name: Fail on unexpected monitor exit code" in workflow
+    assert "steps.runtime_check.outputs.exit_code != '0'" in workflow
+    assert "steps.runtime_check.outputs.exit_code != '1'" in workflow
+    assert "steps.runtime_check.outputs.exit_code != '2'" in workflow
+    assert "- message:" in workflow
+    assert 'payload.get("status") == "fetch-error"' in workflow
+    assert "retry monitor via workflow_dispatch" in workflow
+    assert "raw.githubusercontent.com availability" in workflow
+    assert 'payload.get("status") in {"parse-error", "unexpected-error"}' in workflow
+    assert "repair runtime monitor parser/logic" in workflow
+    assert "fetch-error => retry + availability check" in workflow
+    assert "parse-error/unexpected-error => repair monitor" in workflow
+
+    for relpath in [
+        "ARCHITECTURE.md",
+        "docs/engineering/harness-engineering.md",
+        "docs/security/api-security-checklist.md",
+    ]:
+        content = _read(relpath)
+        assert "dependency-review-runtime-monitor.yml" in content, relpath
+
+    security_doc = _read("docs/security/api-security-checklist.md")
+    assert "Issue #45" in security_doc
+
+    harness_doc = _read("docs/engineering/harness-engineering.md")
+    assert "`fetch-error`: retry first" in harness_doc
+    assert "`parse-error` or `unexpected-error`: repair-focused path" in harness_doc
