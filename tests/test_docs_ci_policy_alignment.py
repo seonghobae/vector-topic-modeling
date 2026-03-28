@@ -149,6 +149,7 @@ def test_pr_branch_guard_workflow_enforces_dev_to_main_policy() -> None:
 
     for relpath in [
         "ARCHITECTURE.md",
+        "docs/operations/deploy-runbook.md",
         "docs/maintainers/releasing.md",
         "docs/workflow/pr-continuity.md",
     ]:

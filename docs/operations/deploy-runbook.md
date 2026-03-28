@@ -42,7 +42,11 @@ shipped `vector-topic-modeling` console script help paths.
 - `main` branch protection enforces pull-request-only merges with at
   least one approving review.
 - `main` required checks are `workflow-lint`, `test-and-build (3.11)`,
-  `test-and-build (3.12)`, and `dependency-review` before merge.
+  `test-and-build (3.12)`, `dependency-review`, `stability (py3.13)`,
+  and `Enforce head branch policy` before merge.
+- PRs targeting `main` must come from `dev` by default; emergency
+  exceptions are `hotfix/*`, `release/*`, or label
+  `override:branch-guard`.
 - No long-running deploy queue or runtime service exists; package build
   artifacts are the deployable output.
 
