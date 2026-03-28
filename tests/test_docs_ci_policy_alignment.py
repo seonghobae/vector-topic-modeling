@@ -89,6 +89,10 @@ def test_dependency_review_runtime_monitor_workflow_and_docs_are_aligned() -> No
         re.search(r"actions/dependency-review-action@[0-9a-f]{40}\b", workflow) is None
     )
     assert "--expected-runtime node24" in workflow
+    assert "name: Fail on unexpected monitor exit code" in workflow
+    assert "steps.runtime_check.outputs.exit_code != '0'" in workflow
+    assert "steps.runtime_check.outputs.exit_code != '1'" in workflow
+    assert "steps.runtime_check.outputs.exit_code != '2'" in workflow
 
     for relpath in [
         "ARCHITECTURE.md",
