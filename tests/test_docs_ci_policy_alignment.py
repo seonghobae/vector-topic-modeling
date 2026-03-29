@@ -120,7 +120,6 @@ def test_trivy_workflow_forces_node24_runtime_and_docs_are_aligned() -> None:
     ]
 
     assert str(node_runtime_value).lower() == "true"
-    assert str(node_runtime_value).lower() != "false"
 
     architecture = _read("ARCHITECTURE.md")
     assert "trivy.yml" in architecture
