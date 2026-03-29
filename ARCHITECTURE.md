@@ -68,7 +68,9 @@ database storage, background jobs, XLSX export, and email delivery.
   head branch `dev` for PRs into `main`, with emergency exceptions limited to
   `hotfix/*`, `release/*`, or label `override:branch-guard`.
 - `trivy.yml` runs Trivy filesystem scanning on every push and PR
-  (plus a weekly schedule) and uploads SARIF results to GitHub Security.
+  (plus a weekly schedule), forces JavaScript actions onto Node24 with
+  `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true`, and uploads SARIF results to
+  GitHub Security.
 - `codeql.yml` performs CodeQL static analysis for Python on every push
   and PR (plus a weekly schedule) and uploads findings to GitHub Security.
 - `cflite_pr.yml` runs ClusterFuzzLite `code-change` fuzzing for PRs to

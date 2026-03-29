@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import re
+import yaml  # type: ignore[import-untyped]
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -108,6 +109,26 @@ def test_dependency_submission_workflow_tracks_uv_lock_snapshots() -> None:
     assert "pr_check_gate_classifier.py" in harness_doc
     assert "--base-branch" in harness_doc
     assert "Non-`main` base branches default to CI-only contexts" in harness_doc
+
+
+def test_trivy_workflow_forces_node24_runtime_and_docs_are_aligned() -> None:
+    workflow = _read(".github/workflows/trivy.yml")
+    workflow_data = yaml.safe_load(workflow)
+
+    node_runtime_value = workflow_data["jobs"]["trivy-fs-scan"]["env"][
+        "FORCE_JAVASCRIPT_ACTIONS_TO_NODE24"
+    ]
+
+    assert str(node_runtime_value).lower() == "true"
+    assert str(node_runtime_value).lower() != "false"
+
+    architecture = _read("ARCHITECTURE.md")
+    assert "trivy.yml" in architecture
+    assert "FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true" in architecture
+
+    security_doc = _read("docs/security/api-security-checklist.md")
+    assert "`trivy.yml` sets" in security_doc
+    assert "FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true" in security_doc
 
 
 def test_ci_runs_docstring_coverage_step_once_for_python_311() -> None:
