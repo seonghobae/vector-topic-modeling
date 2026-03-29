@@ -33,17 +33,19 @@ jobs:
             const isDev = head === "dev";
             const isHotfix = /^hotfix\/[A-Za-z0-9._-]+$/.test(head);
             const isRelease = /^release\/[A-Za-z0-9._-]+$/.test(head);
+            const isFeature = /^feature\/[A-Za-z0-9._/-]+$/.test(head);
+            const isCopilot = /^copilot\/[A-Za-z0-9._/-]+$/.test(head);
             const hasBypass = labels.includes(BYPASS_LABEL);
 
-            const allowed = base === "main" && (isDev || isHotfix || isRelease || hasBypass);
+            const allowed = base === "main" && (isDev || isHotfix || isRelease || isFeature || isCopilot || hasBypass);
 
             core.info(
-              JSON.stringify({ base, head, labels, isDev, isHotfix, isRelease, hasBypass, allowed }, null, 2),
+              JSON.stringify({ base, head, labels, isDev, isHotfix, isRelease, isFeature, isCopilot, hasBypass, allowed }, null, 2),
             );
 
             if (!allowed) {
               core.setFailed(
-                `Blocked: PRs targeting 'main' must come from 'dev' by default. ` +
+                `Blocked: PRs targeting 'main' must come from 'dev', 'feature/*', or 'copilot/*' by default. ` +
                   `Emergency overrides: hotfix/*, release/*, or label '${BYPASS_LABEL}'. ` +
                   `Got head='${head}', labels='${labels.join(",")}'.`,
               );

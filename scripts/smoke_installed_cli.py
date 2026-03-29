@@ -31,6 +31,8 @@ def build_smoke_commands(bin_dir: Path, os_name: str = os.name) -> list[list[str
         ],
         [cli_bin, "--help"],
         [cli_bin, "cluster", "--help"],
+        [python_bin, "-m", "vector_topic_modeling", "--help"],
+        [python_bin, "-m", "vector_topic_modeling", "cluster", "--help"],
     ]
 
 
