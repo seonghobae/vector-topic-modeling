@@ -76,6 +76,9 @@ client in `src/vector_topic_modeling/providers/openai_compat.py`.
 - `trivy.yml` runs Trivy filesystem scanning on every push, PR, and weekly
   schedule, reporting CRITICAL and HIGH severity findings as SARIF to GitHub
   Security.
+- `trivy.yml` sets `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true` so Trivy action
+  helper JavaScript actions run on Node.js 24 ahead of the Node.js 20 runtime
+  deprecation window.
 - `codeql.yml` performs CodeQL static analysis for Python on every push, PR,
   and weekly schedule, surfacing security and quality findings in GitHub
   Security.

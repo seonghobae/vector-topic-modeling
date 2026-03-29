@@ -110,6 +110,21 @@ def test_dependency_submission_workflow_tracks_uv_lock_snapshots() -> None:
     assert "Non-`main` base branches default to CI-only contexts" in harness_doc
 
 
+def test_trivy_workflow_forces_node24_runtime_and_docs_are_aligned() -> None:
+    workflow = _read(".github/workflows/trivy.yml")
+
+    assert "FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true" in workflow
+    assert "FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: false" not in workflow
+
+    architecture = _read("ARCHITECTURE.md")
+    assert "trivy.yml" in architecture
+    assert "FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true" in architecture
+
+    security_doc = _read("docs/security/api-security-checklist.md")
+    assert "`trivy.yml` sets" in security_doc
+    assert "FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true" in security_doc
+
+
 def test_ci_runs_docstring_coverage_step_once_for_python_311() -> None:
     workflow = _read(".github/workflows/ci.yml")
 
