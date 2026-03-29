@@ -13,10 +13,20 @@ def _required_local_verification_fragments() -> list[str]:
     return [
         "uv run pytest -q",
         "uv run python scripts/docstring_coverage.py --min-percent 100",
+        "rm -rf dist .venv-smoke-cli",
         "uv run python -m build",
         "uv run python scripts/smoke_installed_cli.py --dist-dir dist --venv-dir .venv-smoke-cli",
-        "rm -rf dist .venv-smoke-cli",
     ]
+
+
+def _assert_fragments_in_order(
+    content: str, fragments: list[str], *, relpath: str
+) -> None:
+    previous = -1
+    for fragment in fragments:
+        index = content.find(fragment, previous + 1)
+        assert index >= 0, f"missing '{fragment}' in {relpath}"
+        previous = index
 
 
 def test_contributor_facing_docs_match_local_verification_contract() -> None:
@@ -31,9 +41,9 @@ def test_contributor_facing_docs_match_local_verification_contract() -> None:
         ".github/PULL_REQUEST_TEMPLATE.md": _read(".github/PULL_REQUEST_TEMPLATE.md"),
     }
 
+    fragments = _required_local_verification_fragments()
     for relpath, content in docs.items():
-        for fragment in _required_local_verification_fragments():
-            assert fragment in content, f"missing '{fragment}' in {relpath}"
+        _assert_fragments_in_order(content, fragments, relpath=relpath)
 
 
 def test_contributing_branching_guidance_matches_pr_branch_guard_policy() -> None:
