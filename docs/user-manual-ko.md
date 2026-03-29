@@ -130,6 +130,10 @@ vector-topic-modeling cluster INPUT_JSONL --output OUTPUT_JSON
 | `--display-limit` | 선택 | `30` | 토픽당 표시할 최대 대표 예시 개수 (`>= 0`) |
 | `--use-session-representatives` | 선택 | `false` | 세션별로 하나의 대표 예시만 추출하여 카운트 및 할당 폴백에 적용 |
 | `--calculate-silhouette` | 선택 | `false` | 클러스터링 결과의 실루엣 점수를 계산하여 결과 JSON에 추가 |
+| `--calculate-extended-metrics` | 선택 | `false` | Calinski-Harabasz 및 Davies-Bouldin 지표를 계산하여 결과 JSON에 추가 |
+| `--use-distributed-evaluation` | 선택 | `false` | Valkey를 사용하여 지표 계산 작업을 분산 처리 |
+| `--valkey-url` | 선택 | `redis://localhost:6379` | 분산 평가를 위한 Valkey URL |
+| `--valkey-workers` | 선택 | `4` | Valkey 워커의 수 |
 | `--ingestion-config` | 선택 | - | 커스텀 형태의 입력 처리를 위한 JSON 설정 파일 경로 |
 
 ### 4.1 Ingestion 설정 형태 (`--ingestion-config`)

@@ -99,5 +99,5 @@ for topic in result.topics:
 
 - **Q. 최적의 토픽 개수(k)를 찾는 수학적인 해(Mathematical Solution)는 무엇인가요?**
   - A. 이 패키지는 실무적인 편의를 위해 '탐욕적 휴리스틱 알고리즘(Greedy Heuristic Algorithm)'을 기본으로 사용하고 있습니다. 
-    그러나 엄밀한 수학적/통계적 관점에서 최적의 군집 수(k)를 평가하기 위해 패키지 내부에 **실루엣 점수(Silhouette Score)** 계산 기능이 내장되어 있습니다. CLI에서 `--calculate-silhouette` 옵션을 사용하거나 파이썬 API에서 `calculate_silhouette=True`를 설정하면 외부 라이브러리(Scikit-Learn 등) 없이도 전체 군집의 실루엣 점수와 개별 토픽별 점수를 확인할 수 있습니다.
+    그러나 엄밀한 수학적/통계적 관점에서 최적의 군집 수(k)를 평가하기 위해 패키지 내부에 **실루엣 점수(Silhouette Score)** 및 **Calinski-Harabasz, Davies-Bouldin** 지표 계산 기능이 내장되어 있습니다. CLI에서 `--calculate-silhouette`나 `--calculate-extended-metrics` 옵션을 사용하거나 파이썬 API에서 설정하면 외부 라이브러리(Scikit-Learn 등) 없이도 군집 품질을 확인할 수 있습니다. 데이터가 클 경우 Valkey를 통한 분산 처리(`--use-distributed-evaluation`)도 지원합니다.
     - **실루엣 점수**: 각 데이터 포인트가 같은 군집 내의 데이터와 얼마나 가깝고, 다른 군집의 데이터와 얼마나 먼지를 계산하여 -1에서 1 사이의 값으로 평가합니다. 1에 가까울수록 군집화가 잘 되었다고 판단할 수 있습니다.
