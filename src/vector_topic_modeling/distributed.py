@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import importlib
 import uuid
 import threading
 from typing import Any
@@ -13,14 +14,15 @@ from vector_topic_modeling.evaluation import (
 )
 from vector_topic_modeling.clustering import cosine_similarity
 
+_valkey: Any
 try:
-    valkey: Any
-    import valkey
-
+    _valkey = importlib.import_module("valkey")
     VALKEY_AVAILABLE = True
 except ImportError:
-    valkey = None
+    _valkey = None
     VALKEY_AVAILABLE = False
+
+valkey: Any = _valkey
 
 
 def calculate_distributed_metrics(
