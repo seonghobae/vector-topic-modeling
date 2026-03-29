@@ -2,14 +2,11 @@ from __future__ import annotations
 
 import json
 from typing import Any
-
-import pytest
 from unittest.mock import MagicMock, patch
 
-from vector_topic_modeling.distributed import (
-    calculate_distributed_metrics,
-    _worker_loop,
-)
+import pytest
+
+import vector_topic_modeling.distributed as distributed
 
 
 @pytest.fixture
@@ -68,7 +65,7 @@ def mock_valkey_client(mocker: Any) -> MagicMock:
 def test_calculate_distributed_metrics_no_valkey(mocker):
     mocker.patch("vector_topic_modeling.distributed.VALKEY_AVAILABLE", False)
     with pytest.raises(ImportError):
-        calculate_distributed_metrics([], {})
+        distributed.calculate_distributed_metrics([], {})
 
 
 def test_calculate_distributed_metrics_fewer_than_2_clusters(
@@ -78,7 +75,7 @@ def test_calculate_distributed_metrics_fewer_than_2_clusters(
     clusters = [("c1", ["a", "b"])]
     vectors = {"a": [1.0, 0.0], "b": [1.0, 0.0]}
 
-    res = calculate_distributed_metrics(clusters, vectors)
+    res = distributed.calculate_distributed_metrics(clusters, vectors)
     assert res["silhouette_score"] == 0.0
     mock_valkey_client.set.assert_not_called()
 
@@ -88,7 +85,7 @@ def test_calculate_distributed_metrics_no_valid_vectors(mock_valkey_client, mock
     clusters = [("c1", ["x"]), ("c2", ["y"])]
     vectors = {"a": [1.0, 0.0]}
 
-    res = calculate_distributed_metrics(clusters, vectors)
+    res = distributed.calculate_distributed_metrics(clusters, vectors)
     assert res["silhouette_score"] == 0.0
     mock_valkey_client.set.assert_not_called()
 
@@ -103,7 +100,7 @@ def test_calculate_distributed_metrics_valid(mock_valkey_client, mocker):
         "d": [0.1, 0.9],
     }
 
-    res = calculate_distributed_metrics(clusters, vectors, num_workers=2)
+    res = distributed.calculate_distributed_metrics(clusters, vectors, num_workers=2)
     assert res["silhouette_score"] > 0.0
     assert res["calinski_harabasz_score"] > 0.0
     assert res["davies_bouldin_score"] >= 0.0
@@ -115,7 +112,7 @@ def test_calculate_distributed_metrics_valid(mock_valkey_client, mocker):
 
 def test_worker_loop_missing_data(mock_valkey_client):
     # Setup worker loop where vectors_key is missing
-    _worker_loop("redis://localhost:6379", "test_job")
+    distributed._worker_loop("redis://localhost:6379", "test_job")
     mock_valkey_client.get.assert_called()
 
 
@@ -127,7 +124,7 @@ def test_worker_loop_single_element_cluster(mock_valkey_client, mocker):
         "b": [0.0, 1.0],
         "c": [0.1, 0.9],
     }
-    res = calculate_distributed_metrics(clusters, vectors, num_workers=1)
+    res = distributed.calculate_distributed_metrics(clusters, vectors, num_workers=1)
     assert res["silhouette_score"] > 0.0
 
 
@@ -140,7 +137,7 @@ def test_worker_loop_empty_cluster(mock_valkey_client, mocker):
         "c": [0.0, 1.0],
         "d": [0.1, 0.9],
     }
-    res = calculate_distributed_metrics(clusters, vectors, num_workers=1)
+    res = distributed.calculate_distributed_metrics(clusters, vectors, num_workers=1)
     assert res["silhouette_score"] > 0.0
 
 
@@ -152,7 +149,7 @@ def test_calculate_distributed_metrics_worker_fallback(mock_valkey_client, mocke
     # Overwrite hgetall to simulate worker failure (returns empty dict)
     mock_valkey_client.hgetall.return_value = {}
 
-    res = calculate_distributed_metrics(clusters, vectors, num_workers=0)
+    res = distributed.calculate_distributed_metrics(clusters, vectors, num_workers=0)
 
     # It should fallback to base metrics which has silhouette_score calculated locally
     assert res["silhouette_score"] > 0.0
@@ -162,7 +159,6 @@ def test_valkey_import_error_exposes_patchable_symbol():
     import builtins
     import importlib
     import sys
-    import vector_topic_modeling.distributed as distributed
 
     original_import = builtins.__import__
 
@@ -188,7 +184,6 @@ def test_valkey_import_error_exposes_patchable_symbol():
 def test_valkey_import_success_sets_availability_true() -> None:
     import importlib
     import sys
-    import vector_topic_modeling.distributed as distributed
 
     fake_valkey = MagicMock()
 
@@ -208,7 +203,7 @@ def test_distributed_missing_vector(mock_valkey_client, mocker):
         "c": [0.0, 1.0],
         "d": [0.1, 0.9],
     }
-    res = calculate_distributed_metrics(clusters, vectors, num_workers=1)
+    res = distributed.calculate_distributed_metrics(clusters, vectors, num_workers=1)
     assert res["silhouette_score"] > 0.0
 
 
@@ -224,7 +219,7 @@ def test_worker_loop_no_other_clusters(mock_valkey_client, mocker):
         "b": [0.9, 0.1],
     }
     # In this case b_i will stay float('inf') for c1 items because c2 is empty
-    res = calculate_distributed_metrics(clusters, vectors, num_workers=1)
+    distributed.calculate_distributed_metrics(clusters, vectors, num_workers=1)
     # Actually calculate_distributed_metrics would just return if less than 2 valid clusters,
     # but since it checks if len(clusters) < 2... it doesn't check if valid clusters < 2.
     # We should also call _worker_loop directly to guarantee coverage of 160->155 and 164
@@ -233,7 +228,7 @@ def test_worker_loop_no_other_clusters(mock_valkey_client, mocker):
     mock_valkey_client.set("test_job2:clusters", json.dumps([[0, 1], []]))
     mock_valkey_client.rpush("test_job2:tasks", 0, 1)
 
-    _worker_loop("redis://localhost:6379", "test_job2")
+    distributed._worker_loop("redis://localhost:6379", "test_job2")
     # This should hit b_i = 0.0
     res = mock_valkey_client.hgetall("test_job2:results")
     assert "0" in res
@@ -254,7 +249,7 @@ def test_worker_loop_multiple_clusters_mean_dist_not_less(mock_valkey_client):
     mock_valkey_client.set("test_job3:clusters", json.dumps([[0], [1], [2]]))
     mock_valkey_client.rpush("test_job3:tasks", 0)
 
-    _worker_loop("redis://localhost:6379", "test_job3")
+    distributed._worker_loop("redis://localhost:6379", "test_job3")
     # For vector 0, mean_dist to c2 is 1.0 (1.0 - 0.0). mean_dist to c3 is 0.5 (1.0 - 0.5).
     # Since c2 is processed first, b_i becomes 1.0.
     # Wait, c2 dist is 1.0 (sim=0.0). c3 dist is 0.5 (sim=0.5).
@@ -275,4 +270,4 @@ def test_worker_loop_multiple_clusters_mean_dist_not_less(mock_valkey_client):
         ),
     )
     mock_valkey_client.rpush("test_job3:tasks", 0)
-    _worker_loop("redis://localhost:6379", "test_job3")
+    distributed._worker_loop("redis://localhost:6379", "test_job3")
