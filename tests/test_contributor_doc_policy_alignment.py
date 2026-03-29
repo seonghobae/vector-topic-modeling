@@ -106,3 +106,17 @@ def test_user_manual_describes_text_resolution_fallback_order() -> None:
     ]
     positions = [section.index(marker) for marker in ordered_markers]
     assert positions == sorted(positions)
+
+
+def test_general_korean_manual_matches_python_api_contract() -> None:
+    content = _read("docs/user-manual-general-ko.md")
+
+    assert "OpenAICompatConfig(" in content
+    assert "OpenAICompatEmbeddingProvider(" in content
+    assert "topic.topic_id" in content
+    assert "topic.total_count" in content
+    assert "topic.texts[0]" in content
+
+    assert "topic.id" not in content
+    assert "topic.count" not in content
+    assert "topic.display_texts" not in content
