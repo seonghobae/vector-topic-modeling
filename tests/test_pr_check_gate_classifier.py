@@ -302,6 +302,25 @@ def test_main_returns_1_when_required_context_fails(monkeypatch, capsys) -> None
     assert "gate=FAIL" in capsys.readouterr().out
 
 
+def test_main_falls_back_to_base_defaults_when_required_checks_csv_is_empty(
+    monkeypatch, capsys
+) -> None:
+    monkeypatch.setattr(
+        MODULE,
+        "parse_args",
+        lambda: SimpleNamespace(required_checks=", ,", base_branch="main"),
+    )
+    monkeypatch.setattr(MODULE, "_read_stdin", lambda: json.dumps([]))
+
+    exit_code = MODULE.main()
+    output = capsys.readouterr().out
+
+    assert exit_code == 1
+    assert "gate=FAIL" in output
+    assert "required_pending:[" in output
+    assert "workflow-lint" in output
+
+
 def test_main_returns_2_when_input_is_not_json(monkeypatch, capsys) -> None:
     monkeypatch.setattr(
         MODULE,

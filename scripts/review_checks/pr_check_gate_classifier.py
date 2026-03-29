@@ -194,11 +194,15 @@ def main() -> int:
     args = parse_args()
     required_checks_arg = str(args.required_checks).strip()
     if required_checks_arg:
-        required_contexts = {
+        parsed_required_contexts = {
             context.strip()
             for context in required_checks_arg.split(",")
             if context.strip()
         }
+        if parsed_required_contexts:
+            required_contexts = parsed_required_contexts
+        else:
+            required_contexts = set(default_required_checks(str(args.base_branch)))
     else:
         required_contexts = set(default_required_checks(str(args.base_branch)))
 
