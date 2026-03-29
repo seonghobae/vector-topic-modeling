@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import re
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -125,5 +126,8 @@ def test_general_korean_manual_matches_python_api_contract() -> None:
 def test_general_korean_manual_uses_base_url_without_v1_suffix() -> None:
     content = _read("docs/user-manual-general-ko.md")
 
-    assert '--base-url "https://api.openai.com"' in content
-    assert '--base-url "https://api.openai.com/v1"' not in content
+    base_url_values = re.findall(r'--base-url\s+"([^"]+)"', content)
+
+    assert base_url_values, "docs/user-manual-general-ko.md missing --base-url examples"
+    assert "https://api.openai.com" in base_url_values
+    assert all(not url.rstrip("/").endswith("/v1") for url in base_url_values)
