@@ -12,6 +12,21 @@ SUCCESS_STATES = {"success", "pass", "completed", "neutral", "skipped"}
 FAILURE_STATES = {"failure", "fail", "error", "timed_out", "cancelled"}
 PENDING_STATES = {"pending", "in_progress", "queued", "requested"}
 
+MAIN_PR_REQUIRED_CHECKS = (
+    "workflow-lint",
+    "test-and-build (3.11)",
+    "test-and-build (3.12)",
+    "dependency-review",
+    "stability (py3.13)",
+    "Enforce head branch policy",
+)
+
+NON_MAIN_PR_REQUIRED_CHECKS = (
+    "workflow-lint",
+    "test-and-build (3.11)",
+    "test-and-build (3.12)",
+)
+
 
 @dataclass(frozen=True)
 class ParsedCheck:
@@ -147,10 +162,26 @@ def parse_args() -> argparse.Namespace:
     )
     parser.add_argument(
         "--required-checks",
-        default="workflow-lint,test-and-build (3.11),test-and-build (3.12),dependency-review",
+        default="",
         help="Comma-separated required check contexts",
     )
+    parser.add_argument(
+        "--base-branch",
+        default="main",
+        help=(
+            "Base branch used to choose required-check defaults when "
+            "--required-checks is omitted"
+        ),
+    )
     return parser.parse_args()
+
+
+def default_required_checks(base_branch: str) -> tuple[str, ...]:
+    """Return default required-check contexts for the given PR base branch."""
+    normalized = str(base_branch or "").strip().lower()
+    if not normalized or normalized == "main":
+        return MAIN_PR_REQUIRED_CHECKS
+    return NON_MAIN_PR_REQUIRED_CHECKS
 
 
 def _read_stdin() -> str:
@@ -161,11 +192,15 @@ def _read_stdin() -> str:
 def main() -> int:
     """CLI entrypoint: parse input JSON and print gate summary."""
     args = parse_args()
-    required_contexts = {
-        context.strip()
-        for context in str(args.required_checks).split(",")
-        if context.strip()
-    }
+    required_checks_arg = str(args.required_checks).strip()
+    if required_checks_arg:
+        required_contexts = {
+            context.strip()
+            for context in required_checks_arg.split(",")
+            if context.strip()
+        }
+    else:
+        required_contexts = set(default_required_checks(str(args.base_branch)))
 
     payload = _read_stdin()
     try:

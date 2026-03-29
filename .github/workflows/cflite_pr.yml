@@ -3,6 +3,11 @@ name: ClusterFuzzLite PR fuzzing
 on:
   pull_request:
     branches: [main]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - '.clusterfuzzlite/**'
+      - '.github/workflows/cflite_pr.yml'
 
 permissions:
   contents: read

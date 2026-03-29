@@ -21,6 +21,12 @@
   for pull requests.
 - `.github/workflows/ci-stability.yml` is the compatibility verification path
   for Python 3.13 and 3.14 (PR-to-main, push-to-main, weekly schedule).
+- `.github/workflows/cflite_pr.yml` is the PR-scoped ClusterFuzzLite path
+  (`mode: code-change`) and is intentionally limited to code-relevant paths
+  (`src/**`, `tests/**`, `.clusterfuzzlite/**`, workflow file) to avoid
+  docs-only PR fuzzing delays.
+- `.github/workflows/cflite_batch.yml` is the scheduled/manual
+  ClusterFuzzLite deep-fuzz path (`mode: batch`).
 - `.github/workflows/pr-branch-guard.yml` enforces head-branch policy for PRs
   into `main` (`dev` default; emergency exceptions via `hotfix/*`,
   `release/*`, or label `override:branch-guard`).
@@ -37,6 +43,14 @@
   to classify PR check contexts into required blockers vs optional external
   status noise (for example stale CodeRabbit contexts).
   - Input: JSON array from `gh pr checks <pr> --json name,state,completedAt`
+  - Default required checks for `--base-branch main` mirror protected-branch
+    policy:
+    `workflow-lint`, `test-and-build (3.11)`, `test-and-build (3.12)`,
+    `dependency-review`, `stability (py3.13)`, and
+    `Enforce head branch policy`
+  - Non-`main` base branches default to CI-only contexts
+    (`workflow-lint`, `test-and-build (3.11)`, `test-and-build (3.12)`) unless
+    explicit `--required-checks` are provided.
   - Output: `gate=PASS|FAIL` summary with required/optional buckets
 - Use `uv run python scripts/review_checks/dependency_review_action_runtime_check.py`
   to monitor upstream `actions/dependency-review-action` runtime metadata and

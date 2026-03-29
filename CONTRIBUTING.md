@@ -16,7 +16,10 @@ Run these before opening a pull request:
 
 ```bash
 uv run pytest -q
+uv run python scripts/docstring_coverage.py --min-percent 100
+rm -rf dist .venv-smoke-cli
 uv run python -m build
+uv run python scripts/smoke_installed_cli.py --dist-dir dist --venv-dir .venv-smoke-cli
 ```
 
 If you change examples, CLI behavior, or packaging metadata, verify those
@@ -24,7 +27,9 @@ manually as well.
 
 ## Branching and pull requests
 
-- Create a branch from `main`.
+- Create a branch from `dev`.
+- Follow the default merge path: feature branches merge into `dev`, then
+  `dev` merges into `main`.
 - Keep pull requests small and focused.
 - Update docs when changing behavior, workflows, or release expectations.
 - Link relevant issues when they exist.

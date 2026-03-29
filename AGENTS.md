@@ -8,6 +8,8 @@
 ## Build / test
 
 - `uv run pytest -q`
+- `uv run python scripts/docstring_coverage.py --min-percent 100`
+- `rm -rf dist .venv-smoke-cli`
 - `uv run python -m build`
 - `uv run python scripts/smoke_installed_cli.py --dist-dir dist --venv-dir .venv-smoke-cli`
 

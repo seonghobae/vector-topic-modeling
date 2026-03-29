@@ -60,7 +60,12 @@ database storage, background jobs, XLSX export, and email delivery.
   (plus a weekly schedule) and uploads SARIF results to GitHub Security.
 - `codeql.yml` performs CodeQL static analysis for Python on every push
   and PR (plus a weekly schedule) and uploads findings to GitHub Security.
-- `dependency-review.yml` reviews dependency changes in each PR and
+- `cflite_pr.yml` runs ClusterFuzzLite `code-change` fuzzing for PRs to
+  `main`, filtered to code-relevant paths (`src/**`, `tests/**`,
+  `.clusterfuzzlite/**`, and the workflow file) to avoid docs-only PR churn.
+- `cflite_batch.yml` runs scheduled/manual ClusterFuzzLite `batch` fuzzing
+  for deeper continuous coverage outside the PR critical path.
+- `dependency-review.yml` reviews dependency changes in PRs targeting `main` and
   fails on moderate-severity (or above) known vulnerabilities.
 - `dependency-submission.yml` submits dependency snapshots for `pip` and
   `uv.lock` inputs so Dependency Review can consume PR-head dependency
