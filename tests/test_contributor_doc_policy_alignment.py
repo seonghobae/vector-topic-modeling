@@ -43,3 +43,56 @@ def test_contributing_branching_guidance_matches_pr_branch_guard_policy() -> Non
     assert "Create a branch from `main`." not in content
     assert "feature branches merge into `dev`" in content
     assert "`dev` merges into `main`" in content
+
+
+def test_user_manual_documents_all_runtime_cli_tuning_options() -> None:
+    content = _read("docs/user-manual.md")
+
+    for option in [
+        "--min-topics",
+        "--max-topics",
+        "--max-top-share",
+        "--display-limit",
+        "--use-session-representatives",
+    ]:
+        assert f"`{option}`" in content
+
+
+def test_user_manual_documents_all_ingestion_config_keys() -> None:
+    content = _read("docs/user-manual.md")
+
+    for config_key in [
+        "id_fields",
+        "text_fields",
+        "payload_fields",
+        "content_fields",
+        "question_fields",
+        "response_fields",
+        "session_id_fields",
+        "session_key_fields",
+        "count_field",
+        "column_value_path",
+        "column_name_field",
+        "column_value_field",
+        "max_text_chars",
+    ]:
+        assert f"`{config_key}`" in content
+
+
+def test_user_manual_describes_text_resolution_fallback_order() -> None:
+    content = _read("docs/user-manual.md")
+
+    section_start = content.index("### 3.2 Input field behavior")
+    section_end = content.index("### 3.3 Output shape")
+    section = content[section_start:section_end]
+
+    ordered_markers = [
+        "`text_fields`",
+        "`content_fields`",
+        "`payload_fields`",
+        "`question_fields`",
+        "`response_fields`",
+        "serialized row JSON",
+    ]
+    positions = [section.index(marker) for marker in ordered_markers]
+    assert positions == sorted(positions)
