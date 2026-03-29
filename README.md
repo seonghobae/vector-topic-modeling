@@ -138,7 +138,7 @@ Sample files:
 ## Repository guides
 
 - [Contributing](./CONTRIBUTING.md)
-- [User manual](./docs/user-manual.md)
+- [User manual](./docs/user-manual.md) (Korean version: [사용자 매뉴얼](./docs/user-manual-ko.md))
 - [Security policy](./SECURITY.md)
 - [Support](./SUPPORT.md)
 - [Changelog](./CHANGELOG.md)
