@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 import re
+import yaml  # type: ignore[import-untyped]
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -112,9 +113,14 @@ def test_dependency_submission_workflow_tracks_uv_lock_snapshots() -> None:
 
 def test_trivy_workflow_forces_node24_runtime_and_docs_are_aligned() -> None:
     workflow = _read(".github/workflows/trivy.yml")
+    workflow_data = yaml.safe_load(workflow)
 
-    assert "FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true" in workflow
-    assert "FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: false" not in workflow
+    node_runtime_value = workflow_data["jobs"]["trivy-fs-scan"]["env"][
+        "FORCE_JAVASCRIPT_ACTIONS_TO_NODE24"
+    ]
+
+    assert str(node_runtime_value).lower() == "true"
+    assert str(node_runtime_value).lower() != "false"
 
     architecture = _read("ARCHITECTURE.md")
     assert "trivy.yml" in architecture
