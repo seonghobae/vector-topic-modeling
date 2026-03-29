@@ -38,6 +38,7 @@ def build_parser() -> argparse.ArgumentParser:
     cluster.add_argument("--max-top-share", type=float, default=0.35)
     cluster.add_argument("--display-limit", type=int, default=30)
     cluster.add_argument("--use-session-representatives", action="store_true")
+    cluster.add_argument("--calculate-silhouette", action="store_true")
     cluster.add_argument("--ingestion-config")
     return parser
 
@@ -83,11 +84,13 @@ def main(argv: list[str] | None = None) -> int:
             max_top_share=args.max_top_share,
             use_session_representatives=args.use_session_representatives,
             display_limit=args.display_limit,
+            calculate_silhouette=args.calculate_silhouette,
         ),
     )
     result = modeler.fit_predict(docs)
     payload = {
         "topics": [topic.__dict__ for topic in result.topics],
+        "silhouette_score": result.silhouette_score,
         "assignments": [assignment.__dict__ for assignment in result.assignments],
         "session_topic_counts": [
             {"session_id": session_id, "topic_id": topic_id, "count": count}

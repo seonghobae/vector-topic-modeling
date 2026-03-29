@@ -11,6 +11,11 @@ from vector_topic_modeling.clustering import (
     adaptive_greedy_cluster,
     rescue_display_dominance,
     stable_topic_id,
+
+    Cluster,
+    adaptive_greedy_cluster,
+    rescue_display_dominance,
+    stable_topic_id,
 )
 from vector_topic_modeling.providers.base import EmbeddingProvider
 from vector_topic_modeling.sessioning import (
@@ -19,6 +24,7 @@ from vector_topic_modeling.sessioning import (
     pick_session_main_digest,
 )
 from vector_topic_modeling.text import normalize_text
+from vector_topic_modeling.evaluation import SilhouetteResult, calculate_silhouette_score
 
 
 class PreparedRow(TypedDict):
@@ -57,6 +63,7 @@ class TopicModelConfig:
     use_session_representatives: bool = False
     display_limit: int = 30
     embedding_model_name: str = "embedding-provider"
+    calculate_silhouette: bool = False
 
 
 @dataclass(frozen=True)
@@ -85,6 +92,7 @@ class TopicModelResult:
     assignments: list[TopicAssignment]
     session_topic_counts: dict[tuple[str, str], int]
     topic_lookup: dict[str, Topic]
+    silhouette_score: SilhouetteResult | None = None
 
 
 class TopicModeler:
@@ -168,11 +176,18 @@ class TopicModeler:
             session_representatives=session_representatives,
         )
         topic_lookup = {topic.topic_id: topic for topic in topics}
+        silhouette = None
+        if self.config.calculate_silhouette:
+            cluster_input = [(topic.topic_id, topic.texts) for topic in topics]
+            vectors_by_text = {text: vector for text, (vector, _) in items_by_text.items()}
+            silhouette = calculate_silhouette_score(cluster_input, vectors_by_text)
+
         return TopicModelResult(
             topics=topics,
             assignments=assignments,
             session_topic_counts=session_topic_counts,
             topic_lookup=topic_lookup,
+            silhouette_score=silhouette,
         )
 
     def _prepare_row(self, document: TopicDocument) -> PreparedRow:

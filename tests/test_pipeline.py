@@ -196,3 +196,27 @@ def test_fit_predict_allows_sessions_without_selected_representative(
     result = modeler.fit_predict(docs)
 
     assert len(result.assignments) == 2
+
+
+def test_pipeline_silhouette_score() -> None:
+    """Test that pipeline correctly calculates silhouette score when enabled."""
+    provider = FakeEmbeddingProvider({
+        "apple orange": [1.0, 0.0],
+        "cat dog": [0.0, 1.0],
+    })
+    docs = [
+        TopicDocument(id="1", text="apple orange"),
+        TopicDocument(id="2", text="apple orange"),
+        TopicDocument(id="3", text="cat dog"),
+        TopicDocument(id="4", text="cat dog"),
+    ]
+    modeler = TopicModeler(
+        embedding_provider=provider,
+        config=TopicModelConfig(
+            min_topics=2, max_topics=2, calculate_silhouette=True
+        ),
+    )
+    result = modeler.fit_predict(docs)
+    assert result.silhouette_score is not None
+    assert "overall_score" in result.silhouette_score
+    assert isinstance(result.silhouette_score["overall_score"], float)

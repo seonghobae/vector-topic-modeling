@@ -137,6 +137,7 @@ vector-topic-modeling cluster INPUT_JSONL --output OUTPUT_JSON
 | `--max-top-share` | no | `0.35` | Dominant-topic cap for adaptive clustering and rescue (`0 < x <= 1`) |
 | `--display-limit` | no | `30` | Max representative examples per topic (`>= 0`) |
 | `--use-session-representatives` | no | `false` | Use one representative digest per session for counting and assignment fallback |
+| `--calculate-silhouette` | no | `false` | Calculate and append Silhouette Score evaluation metrics to the output JSON |
 | `--ingestion-config` | no | - | JSON config for generic row ingestion |
 <!-- markdownlint-enable MD013 -->
 
