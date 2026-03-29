@@ -42,7 +42,7 @@
 ```bash
 vector-topic-modeling cluster my_documents.jsonl \
   --output topics_output.json \
-  --base-url "https://api.openai.com/v1" \
+  --base-url "https://api.openai.com" \
   --api-key "sk-..." \
   --model text-embedding-3-large \
   --similarity-threshold 0.80 \
