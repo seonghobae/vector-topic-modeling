@@ -249,6 +249,17 @@ def test_default_required_checks_for_non_main_branch_excludes_main_only_gates() 
     }
 
 
+def test_default_required_checks_treats_empty_base_branch_as_main_policy() -> None:
+    assert set(MODULE.default_required_checks("")) == {
+        "workflow-lint",
+        "test-and-build (3.11)",
+        "test-and-build (3.12)",
+        "dependency-review",
+        "stability (py3.13)",
+        "Enforce head branch policy",
+    }
+
+
 def test_main_uses_base_branch_defaults_when_required_checks_omitted(
     monkeypatch, capsys
 ) -> None:

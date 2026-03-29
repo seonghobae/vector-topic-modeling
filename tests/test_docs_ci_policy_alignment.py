@@ -10,6 +10,46 @@ def _read(relpath: str) -> str:
     return (REPO_ROOT / relpath).read_text(encoding="utf-8")
 
 
+def _extract_pull_request_paths(workflow: str) -> set[str]:
+    lines = workflow.splitlines()
+    in_pull_request = False
+    pull_request_indent = -1
+    in_paths = False
+    paths_indent = -1
+    out: set[str] = set()
+
+    for line in lines:
+        stripped = line.strip()
+        indent = len(line) - len(line.lstrip(" "))
+        if not stripped:
+            continue
+
+        if stripped.startswith("pull_request:"):
+            in_pull_request = True
+            pull_request_indent = indent
+            in_paths = False
+            continue
+
+        if in_pull_request and indent <= pull_request_indent:
+            in_pull_request = False
+            in_paths = False
+
+        if in_pull_request and stripped.startswith("paths:"):
+            in_paths = True
+            paths_indent = indent
+            continue
+
+        if in_paths and indent <= paths_indent:
+            in_paths = False
+
+        if in_paths and stripped.startswith("-"):
+            value = stripped[1:].strip().strip("\"'")
+            if value:
+                out.add(value)
+
+    return out
+
+
 def test_required_check_documents_include_dependency_review_gate() -> None:
     required_checks_phrase = "dependency-review"
     for relpath in [
@@ -166,11 +206,13 @@ def test_clusterfuzzlite_pr_workflow_uses_code_path_filtering() -> None:
     assert "name: ClusterFuzzLite PR fuzzing" in workflow
     assert "pull_request:" in workflow
     assert "branches: [main]" in workflow
-    assert "paths:" in workflow
-    assert "- 'src/**'" in workflow
-    assert "- 'tests/**'" in workflow
-    assert "- '.clusterfuzzlite/**'" in workflow
-    assert "- '.github/workflows/cflite_pr.yml'" in workflow
+    paths = _extract_pull_request_paths(workflow)
+    assert {
+        "src/**",
+        "tests/**",
+        ".clusterfuzzlite/**",
+        ".github/workflows/cflite_pr.yml",
+    }.issubset(paths)
 
     for relpath in ["ARCHITECTURE.md", "docs/engineering/harness-engineering.md"]:
         content = _read(relpath)

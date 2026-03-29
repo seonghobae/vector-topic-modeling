@@ -15,6 +15,7 @@ def _required_local_verification_fragments() -> list[str]:
         "uv run python scripts/docstring_coverage.py --min-percent 100",
         "uv run python -m build",
         "uv run python scripts/smoke_installed_cli.py --dist-dir dist --venv-dir .venv-smoke-cli",
+        "rm -rf dist .venv-smoke-cli",
     ]
 
 

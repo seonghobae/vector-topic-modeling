@@ -179,7 +179,7 @@ def parse_args() -> argparse.Namespace:
 def default_required_checks(base_branch: str) -> tuple[str, ...]:
     """Return default required-check contexts for the given PR base branch."""
     normalized = str(base_branch or "").strip().lower()
-    if normalized == "main":
+    if not normalized or normalized == "main":
         return MAIN_PR_REQUIRED_CHECKS
     return NON_MAIN_PR_REQUIRED_CHECKS
 
