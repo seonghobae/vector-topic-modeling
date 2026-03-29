@@ -286,6 +286,6 @@ def test_pipeline_extended_metrics_distributed(mocker) -> None:
 
     result = modeler.fit_predict(docs)
 
-    assert mock_calc.called
+    mock_calc.assert_called_once()
     assert result.extended_metrics is not None
     assert result.extended_metrics["silhouette_score"] == 1.0

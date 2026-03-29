@@ -50,6 +50,10 @@ def build_parser() -> argparse.ArgumentParser:
 def validate_args(parser: argparse.ArgumentParser, args: argparse.Namespace) -> None:
     """Validate parsed CLI arguments before executing commands."""
     if args.command == "cluster":
+        valkey_workers = getattr(args, "valkey_workers", 1)
+        use_distributed = getattr(args, "use_distributed_evaluation", False)
+        calculate_extended = getattr(args, "calculate_extended_metrics", False)
+
         if args.min_topics < 1:
             parser.error("--min-topics must be >= 1")
         if args.min_topics > args.max_topics:
@@ -58,6 +62,12 @@ def validate_args(parser: argparse.ArgumentParser, args: argparse.Namespace) -> 
             parser.error("--max-top-share must be in (0, 1]")
         if args.display_limit < 0:
             parser.error("--display-limit must be >= 0")
+        if valkey_workers < 1:
+            parser.error("--valkey-workers must be >= 1")
+        if use_distributed and not calculate_extended:
+            parser.error(
+                "--use-distributed-evaluation requires --calculate-extended-metrics"
+            )
 
 
 def main(argv: list[str] | None = None) -> int:

@@ -51,6 +51,9 @@ def calculate_silhouette_score(
         cluster_vectors.append(vecs)
         cluster_ids.append(cid)
 
+    if sum(1 for vecs in cluster_vectors if vecs) < 2:
+        return {"overall_score": 0.0, "cluster_scores": {}}
+
     overall_scores: list[float] = []
     cluster_score_map: dict[str, float] = {}
 
@@ -80,9 +83,6 @@ def calculate_silhouette_score(
                 ) / len(vecs_j)
                 if mean_dist < b_i:
                     b_i = mean_dist
-
-            if b_i == float("inf"):
-                b_i = 0.0
 
             max_ab = max(a_i, b_i)
             s_i = (b_i - a_i) / max_ab if max_ab > 0 else 0.0

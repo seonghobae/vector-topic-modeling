@@ -54,7 +54,7 @@ def test_silhouette_score_empty_or_missing_vectors():
 
     result = calculate_silhouette_score(clusters, vectors_by_text)
     assert result["overall_score"] == 0.0
-    assert "c2" in result["cluster_scores"]
+    assert result["cluster_scores"] == {}
 
     # Text not in vectors_by_text
     clusters_missing = [
@@ -155,10 +155,7 @@ def test_calculate_silhouette_score_fewer_than_2_clusters():
 
 
 def test_calculate_extended_metrics_db_dist_zero():
-    # To hit 197: r_ij = float('inf') -> dist_ij == 0.0
-    # To hit 200->202: if r_ij > max_r -> False. So we need r_ij not greater than max_r. But if it's inf, it's always greater.
-    # Wait, if r_ij is negative or something? r_ij is distance.
-    # Let's write a test where dist_ij is exactly 0.0
+    # dist_ij == 0.0 path should avoid division by zero in DB computation.
     clusters = [("c1", ["a"]), ("c2", ["b"])]
     vectors = {
         "a": [1.0, 0.0],
@@ -169,25 +166,25 @@ def test_calculate_extended_metrics_db_dist_zero():
 
 
 def test_calculate_extended_metrics_db_smaller_r_ij():
-    # To hit 200->202 false branch: `r_ij > max_r` is False
+    # Exercise branch where later candidate does not exceed current max_r.
     clusters = [("c1", ["a"]), ("c2", ["b"]), ("c3", ["c"])]
     vectors = {
         "a": [1.0, 0.0],
         "b": [0.9, 0.1],  # Close to 'a', so high r_ij
         "c": [0.0, 1.0],  # Far from 'a', so low r_ij
     }
-    # When i=0 (c1), it checks j=1 (c2) -> high r_ij, max_r = high.
-    # Then it checks j=2 (c3) -> low r_ij. `r_ij > max_r` will be False!
     res = calculate_extended_metrics(clusters, vectors)
     assert res["davies_bouldin_score"] > 0.0
 
 
 def test_silhouette_mean_dist_not_less():
-    # Hit 73->68: if mean_dist < b_i is False
+    # Exercise branch where a later cluster does not replace current b_i.
     clusters = [
         ("c1", ["a"]),
         ("c2", ["b"]),  # closer to a
         ("c3", ["c"]),  # further from a
     ]
     vectors = {"a": [1.0, 0.0], "b": [0.9, 0.1], "c": [0.0, 1.0]}
-    calculate_silhouette_score(clusters, vectors)
+    res = calculate_silhouette_score(clusters, vectors)
+    assert -1.0 <= res["overall_score"] <= 1.0
+    assert set(res["cluster_scores"].keys()) == {"c1", "c2", "c3"}

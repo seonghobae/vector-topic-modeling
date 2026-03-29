@@ -74,6 +74,10 @@ def calculate_distributed_metrics(
         cluster_indices.append(c_idx)
         cluster_ids.append(cid)
 
+    non_empty_clusters = sum(1 for indices in cluster_indices if indices)
+    if non_empty_clusters < 2:
+        return base_metrics
+
     # Store data in Valkey
     vectors_key = f"{job_id}:vectors"
     clusters_key = f"{job_id}:clusters"
@@ -105,7 +109,7 @@ def calculate_distributed_metrics(
     client.delete(tasks_key)
     client.delete(results_key)
 
-    if not results:
+    if not results or len(results) != len(flat_vectors):
         # Fallback if workers failed
         return base_metrics
 

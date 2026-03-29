@@ -70,6 +70,9 @@ def test_cli_errors():
             "max_topics": 30,
             "max_top_share": 0.35,
             "display_limit": 30,
+            "valkey_workers": 4,
+            "use_distributed_evaluation": False,
+            "calculate_extended_metrics": False,
         }
 
         check_error(
@@ -96,6 +99,20 @@ def test_cli_errors():
             {**base_args, "display_limit": -1},
             "--display-limit must be >= 0",
             "--display-limit must be >= 0",
+        )
+        check_error(
+            {**base_args, "valkey_workers": 0},
+            "--valkey-workers must be >= 1",
+            "--valkey-workers must be >= 1",
+        )
+        check_error(
+            {
+                **base_args,
+                "use_distributed_evaluation": True,
+                "calculate_extended_metrics": False,
+            },
+            "--use-distributed-evaluation requires --calculate-extended-metrics",
+            "--use-distributed-evaluation requires --calculate-extended-metrics",
         )
 
 

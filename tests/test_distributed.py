@@ -146,13 +146,43 @@ def test_calculate_distributed_metrics_worker_fallback(mock_valkey_client, mocke
     clusters = [("c1", ["a", "b"]), ("c2", ["c", "d"])]
     vectors = {"a": [1.0, 0.0], "b": [0.9, 0.1], "c": [0.0, 1.0], "d": [0.1, 0.9]}
 
-    # Overwrite hgetall to simulate worker failure (returns empty dict)
-    mock_valkey_client.hgetall.return_value = {}
+    # Override fixture side effect so hgetall deterministically returns empty data.
+    mock_valkey_client.hgetall.side_effect = lambda _key: {}
 
     res = distributed.calculate_distributed_metrics(clusters, vectors, num_workers=0)
 
     # It should fallback to base metrics which has silhouette_score calculated locally
     assert res["silhouette_score"] > 0.0
+
+
+def test_calculate_distributed_metrics_partial_results_fallback(
+    mock_valkey_client, mocker
+):
+    mocker.patch("vector_topic_modeling.distributed.VALKEY_AVAILABLE", True)
+    base_metrics = {
+        "silhouette_score": 0.42,
+        "calinski_harabasz_score": 1.23,
+        "davies_bouldin_score": 0.98,
+        "topic_coherence": {"c1": 0.9, "c2": 0.8},
+    }
+    mocker.patch(
+        "vector_topic_modeling.distributed.calculate_extended_metrics",
+        return_value=base_metrics,
+    )
+
+    clusters = [("c1", ["a", "b"]), ("c2", ["c", "d"])]
+    vectors = {
+        "a": [1.0, 0.0],
+        "b": [0.9, 0.1],
+        "c": [0.0, 1.0],
+        "d": [0.1, 0.9],
+    }
+
+    mock_valkey_client.hgetall.side_effect = lambda _key: {"0": "0.5"}
+
+    res = distributed.calculate_distributed_metrics(clusters, vectors, num_workers=0)
+
+    assert res == base_metrics
 
 
 def test_valkey_import_error_exposes_patchable_symbol():
@@ -167,18 +197,19 @@ def test_valkey_import_error_exposes_patchable_symbol():
             raise ImportError("No module named valkey")
         return original_import(name, *args, **kwargs)
 
-    with patch("builtins.__import__", side_effect=mock_import):
-        sys.modules.pop("valkey", None)
+    try:
+        with patch("builtins.__import__", side_effect=mock_import):
+            sys.modules.pop("valkey", None)
+            importlib.reload(distributed)
+            assert not distributed.VALKEY_AVAILABLE
+            assert hasattr(distributed, "valkey")
+            assert distributed.valkey is None
+
+            patched_valkey = MagicMock()
+            with patch("vector_topic_modeling.distributed.valkey", patched_valkey):
+                assert distributed.valkey is patched_valkey
+    finally:
         importlib.reload(distributed)
-        assert not distributed.VALKEY_AVAILABLE
-        assert hasattr(distributed, "valkey")
-        assert distributed.valkey is None
-
-        patched_valkey = MagicMock()
-        with patch("vector_topic_modeling.distributed.valkey", patched_valkey):
-            assert distributed.valkey is patched_valkey
-
-    importlib.reload(distributed)
 
 
 def test_valkey_import_success_sets_availability_true() -> None:
@@ -187,12 +218,13 @@ def test_valkey_import_success_sets_availability_true() -> None:
 
     fake_valkey = MagicMock()
 
-    with patch.dict(sys.modules, {"valkey": fake_valkey}):
+    try:
+        with patch.dict(sys.modules, {"valkey": fake_valkey}):
+            importlib.reload(distributed)
+            assert distributed.VALKEY_AVAILABLE
+            assert distributed.valkey is fake_valkey
+    finally:
         importlib.reload(distributed)
-        assert distributed.VALKEY_AVAILABLE
-        assert distributed.valkey is fake_valkey
-
-    importlib.reload(distributed)
 
 
 def test_distributed_missing_vector(mock_valkey_client, mocker):
@@ -218,11 +250,9 @@ def test_worker_loop_no_other_clusters(mock_valkey_client, mocker):
         "a": [1.0, 0.0],
         "b": [0.9, 0.1],
     }
-    # In this case b_i will stay float('inf') for c1 items because c2 is empty
+    # Distributed path now short-circuits when fewer than 2 populated clusters remain.
     distributed.calculate_distributed_metrics(clusters, vectors, num_workers=1)
-    # Actually calculate_distributed_metrics would just return if less than 2 valid clusters,
-    # but since it checks if len(clusters) < 2... it doesn't check if valid clusters < 2.
-    # We should also call _worker_loop directly to guarantee coverage of 160->155 and 164
+    # We still call _worker_loop directly to exercise the worker branch.
 
     mock_valkey_client.set("test_job2:vectors", json.dumps([[1.0, 0.0], [0.9, 0.1]]))
     mock_valkey_client.set("test_job2:clusters", json.dumps([[0, 1], []]))
@@ -235,14 +265,14 @@ def test_worker_loop_no_other_clusters(mock_valkey_client, mocker):
 
 
 def test_worker_loop_multiple_clusters_mean_dist_not_less(mock_valkey_client):
-    # This hits 160->155, when mean_dist is NOT less than b_i
+    # First run: later cluster can replace b_i.
     mock_valkey_client.set(
         "test_job3:vectors",
         json.dumps(
             [
-                [1.0, 0.0],  # 0, c1
-                [0.0, 1.0],  # 1, c2 (close to c1? dist=1.0)
-                [0.5, 0.5],  # 2, c3 (dist to c1=0.5, so dist to c3 < dist to c2)
+                [1.0, 0.0],
+                [0.0, 1.0],
+                [0.5, 0.5],
             ]
         ),
     )
@@ -250,24 +280,23 @@ def test_worker_loop_multiple_clusters_mean_dist_not_less(mock_valkey_client):
     mock_valkey_client.rpush("test_job3:tasks", 0)
 
     distributed._worker_loop("redis://localhost:6379", "test_job3")
-    # For vector 0, mean_dist to c2 is 1.0 (1.0 - 0.0). mean_dist to c3 is 0.5 (1.0 - 0.5).
-    # Since c2 is processed first, b_i becomes 1.0.
-    # Wait, c2 dist is 1.0 (sim=0.0). c3 dist is 0.5 (sim=0.5).
-    # Since c2 dist (1.0) > c3 dist (0.5)? Wait, for c2, sim is 0.0, dist is 1.0.
-    # For c3, sim is 0.5, dist is 0.5.
-    # First it sees c2, b_i = 1.0. Then it sees c3, dist=0.5. 0.5 < 1.0, so it updates b_i.
-    # What if it sees c3 first? cluster_indices is [[0], [1], [2]].
-    # So c2 is first. To make it NOT update b_i, the second dist must be >= first dist.
-    # So make c2 close, c3 far.
+    first_res = mock_valkey_client.hgetall("test_job3:results")
+    assert "0" in first_res
+    assert -1.0 <= float(first_res["0"]) <= 1.0
+
+    # Second run: exercise branch where a later cluster does not replace b_i.
+    mock_valkey_client.delete("test_job3:results")
     mock_valkey_client.set(
         "test_job3:vectors",
         json.dumps(
             [
-                [1.0, 0.0],  # 0, c1
-                [0.5, 0.5],  # 1, c2 (close, dist 0.5)
-                [0.0, 1.0],  # 2, c3 (far, dist 1.0)
+                [1.0, 0.0],
+                [0.5, 0.5],
+                [0.0, 1.0],
             ]
         ),
     )
     mock_valkey_client.rpush("test_job3:tasks", 0)
     distributed._worker_loop("redis://localhost:6379", "test_job3")
+    second_res = mock_valkey_client.hgetall("test_job3:results")
+    assert second_res["0"] == "1.0"

@@ -3,7 +3,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-from vector_topic_modeling.cli import build_parser
+import pytest
+
+from vector_topic_modeling.cli import build_parser, validate_args
 
 
 def test_build_parser_supports_cluster_command() -> None:
@@ -13,6 +15,37 @@ def test_build_parser_supports_cluster_command() -> None:
     assert args.input_path == "input.jsonl"
     assert args.output_path == "topics.json"
     assert args.ingestion_config is None
+
+
+def test_validate_args_rejects_non_positive_valkey_workers() -> None:
+    parser = build_parser()
+    args = parser.parse_args(
+        [
+            "cluster",
+            "input.jsonl",
+            "--output",
+            "topics.json",
+            "--valkey-workers",
+            "0",
+        ]
+    )
+    with pytest.raises(SystemExit):
+        validate_args(parser, args)
+
+
+def test_validate_args_requires_extended_metrics_for_distributed_mode() -> None:
+    parser = build_parser()
+    args = parser.parse_args(
+        [
+            "cluster",
+            "input.jsonl",
+            "--output",
+            "topics.json",
+            "--use-distributed-evaluation",
+        ]
+    )
+    with pytest.raises(SystemExit):
+        validate_args(parser, args)
 
 
 def test_cli_cluster_writes_output(monkeypatch, tmp_path: Path) -> None:
