@@ -97,7 +97,9 @@ used with `--ingestion-config`.
 ### 3.2 Input field behavior
 
 - `id`: preferred identifier; falls back to `document_id`, then row index
-- `text`: defaults to `""` when absent
+- `text`: resolved in order from `text_fields` → `content_fields` →
+  `payload_fields` → `question_fields`/`response_fields` QA pair →
+  serialized row JSON
 - `session_id`, `question`, `response`: optional
 - `count`: defaults to `1`
 
@@ -121,6 +123,7 @@ Command pattern:
 vector-topic-modeling cluster INPUT_JSONL --output OUTPUT_JSON
 ```
 
+<!-- markdownlint-disable MD013 -->
 | Option | Required | Default | Description |
 | --- | --- | --- | --- |
 | `input_path` | yes | - | Input JSONL file path |
@@ -129,7 +132,13 @@ vector-topic-modeling cluster INPUT_JSONL --output OUTPUT_JSON
 | `--api-key` | runtime-required | - | API key used for embedding requests |
 | `--model` | no | `text-embedding-3-large` | Embedding model |
 | `--similarity-threshold` | no | `0.85` | Clustering similarity threshold |
+| `--min-topics` | no | `2` | Minimum number of output topics (`>= 1`) |
+| `--max-topics` | no | `30` | Max output topics (`>= --min-topics`) |
+| `--max-top-share` | no | `0.35` | Dominant-topic cap for adaptive clustering and rescue (`0 < x <= 1`) |
+| `--display-limit` | no | `30` | Max representative examples per topic (`>= 0`) |
+| `--use-session-representatives` | no | `false` | Use one representative digest per session for counting and assignment fallback |
 | `--ingestion-config` | no | - | JSON config for generic row ingestion |
+<!-- markdownlint-enable MD013 -->
 
 Example with stricter threshold:
 
@@ -150,10 +159,14 @@ Config keys:
 - `text_fields`: ordered candidates for direct text extraction
 - `payload_fields`: ordered candidates for JSON payload fallback
 - `content_fields`: explicit DB column names to concatenate (`field: value`)
+- `question_fields`: ordered candidates for question text
+- `response_fields`: ordered candidates for response text
 - `session_id_fields`: ordered candidates for explicit `session_id`
 - `session_key_fields`: ordered primary-key columns used to compose `session_id`
+- `count_field`: source field mapped into `TopicDocument.count` (defaults to `count`)
 - `column_value_path`: row key containing list-style column/value pairs
 - `column_name_field`, `column_value_field`: keys used inside column/value entries
+- `max_text_chars`: normalization cap applied to resolved text (defaults to `4000`)
 
 Example:
 
@@ -223,7 +236,8 @@ uv run python scripts/smoke_installed_cli.py --dist-dir dist --venv-dir .venv-sm
    git push origin v0.1.1
    ```
 
-2. `.github/workflows/release.yml` verifies tests/build/smoke and creates a
+2. `.github/workflows/release.yml` verifies
+   tests/docstring coverage/build/smoke and creates a
    GitHub Release with built artifacts.
 3. `.github/workflows/publish.yml` then runs on `release.published` and uploads
    to PyPI using PyPI Trusted Publishing (OIDC).
@@ -285,14 +299,14 @@ sequenceDiagram
     GH->>R: Trigger on push.tags (v*)
     R->>R: Checkout tagged commit + validate SemVer tag
     R->>R: uv sync --extra dev
-    R->>R: pytest + build + smoke_installed_cli
+    R->>R: pytest + docstring_coverage + build + smoke_installed_cli
     R->>R: Generate SHA256SUMS for dist/*
     R->>REL: Create/update release and upload dist artifacts
 
     REL-->>GH: release.published event
     GH->>P: Trigger publish workflow
     P->>P: uv sync --extra dev
-    P->>P: Re-run pytest + build + smoke gate
+    P->>P: Re-run pytest + docstring_coverage + build + smoke gate
     P->>PY: pypa/gh-action-pypi-publish (dist/*)
     PY-->>M: New package version available
 ```
