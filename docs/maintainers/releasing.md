@@ -100,7 +100,8 @@ Before your first automated release, configure a Trusted Publisher in PyPI:
    git push origin v0.1.1
    ```
 
-6. The `release.yml` workflow verifies tests/build/smoke and creates a
+6. The `release.yml` workflow verifies
+   tests/docstring coverage/build/smoke and creates a
    GitHub Release with artifacts from that tag.
 7. The `publish.yml` workflow then runs on `release.published` and
    publishes to PyPI using PyPI Trusted Publishing (OIDC).

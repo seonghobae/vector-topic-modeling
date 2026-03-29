@@ -231,3 +231,18 @@ def test_dependency_review_scope_docs_match_main_target_trigger() -> None:
         assert "PRs targeting `main`" in content, relpath
         assert "every PR" not in content, relpath
         assert "each PR" not in content, relpath
+
+
+def test_release_docs_include_docstring_coverage_release_and_publish_gate() -> None:
+    release_workflow = _read(".github/workflows/release.yml")
+    publish_workflow = _read(".github/workflows/publish.yml")
+    assert "scripts/docstring_coverage.py --min-percent 100" in release_workflow
+    assert "scripts/docstring_coverage.py --min-percent 100" in publish_workflow
+
+    maintainers_doc = " ".join(_read("docs/maintainers/releasing.md").split())
+    assert "verifies tests/docstring coverage/build/smoke" in maintainers_doc
+
+    user_manual = " ".join(_read("docs/user-manual.md").split())
+    assert "verifies tests/docstring coverage/build/smoke" in user_manual
+    assert "pytest + docstring_coverage + build + smoke_installed_cli" in user_manual
+    assert "Re-run pytest + docstring_coverage + build + smoke gate" in user_manual
