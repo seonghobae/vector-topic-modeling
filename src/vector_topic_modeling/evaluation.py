@@ -223,8 +223,7 @@ def calculate_extended_metrics(
                 r_ij = LARGE_DB_PENALTY
             else:
                 r_ij = (scatter[i] + scatter[j]) / dist_ij
-            if r_ij > max_r:
-                max_r = r_ij
+            max_r = max(max_r, r_ij)
             found_other = True
 
         if found_other:
