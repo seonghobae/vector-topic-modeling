@@ -120,3 +120,10 @@ def test_general_korean_manual_matches_python_api_contract() -> None:
     assert "topic.id" not in content
     assert "topic.count" not in content
     assert "topic.display_texts" not in content
+
+
+def test_general_korean_manual_uses_base_url_without_v1_suffix() -> None:
+    content = _read("docs/user-manual-general-ko.md")
+
+    assert '--base-url "https://api.openai.com"' in content
+    assert '--base-url "https://api.openai.com/v1"' not in content
