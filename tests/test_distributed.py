@@ -147,9 +147,10 @@ def test_calculate_distributed_metrics_worker_fallback(mock_valkey_client, mocke
     vectors = {"a": [1.0, 0.0], "b": [0.9, 0.1], "c": [0.0, 1.0], "d": [0.1, 0.9]}
 
     # Override fixture side effect so hgetall deterministically returns empty data.
-    mock_valkey_client.hgetall.side_effect = lambda _key: {}
+    mock_valkey_client.hgetall.side_effect = None
+    mock_valkey_client.hgetall.return_value = {}
 
-    res = distributed.calculate_distributed_metrics(clusters, vectors, num_workers=0)
+    res = distributed.calculate_distributed_metrics(clusters, vectors, num_workers=1)
 
     # It should fallback to base metrics which has silhouette_score calculated locally
     assert res["silhouette_score"] > 0.0
