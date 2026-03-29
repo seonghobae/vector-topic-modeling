@@ -1,6 +1,9 @@
 """Standalone vector-based topic modeling package."""
 
-from vector_topic_modeling.evaluation import SilhouetteResult, calculate_silhouette_score
+from vector_topic_modeling.evaluation import (
+    SilhouetteResult,
+    calculate_silhouette_score,
+)
 from vector_topic_modeling.pipeline import (
     Topic,
     TopicAssignment,

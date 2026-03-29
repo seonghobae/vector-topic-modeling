@@ -6,28 +6,33 @@ from __future__ import annotations
 from typing import TypedDict
 from vector_topic_modeling.clustering import cosine_similarity
 
+
 class ClusteringMetrics(TypedDict):
     """Comprehensive result payload for mathematical evaluation metrics."""
+
     silhouette_score: float
     calinski_harabasz_score: float
     davies_bouldin_score: float
     topic_coherence: dict[str, float]
 
+
 class SilhouetteResult(TypedDict):
     """Result payload for silhouette score evaluation."""
+
     overall_score: float
     cluster_scores: dict[str, float]
+
 
 def calculate_silhouette_score(
     clusters: list[tuple[str, list[str]]],
     vectors_by_text: dict[str, list[float]],
 ) -> SilhouetteResult:
     """Calculate the Silhouette Score for the given clusters using cosine distance.
-    
+
     Args:
         clusters: A list of tuples containing (cluster_id, list_of_texts).
         vectors_by_text: A mapping from text to its embedding vector.
-        
+
     Returns:
         The overall average silhouette score and per-cluster scores.
         Cosine distance is calculated as (1.0 - cosine_similarity).
@@ -37,7 +42,7 @@ def calculate_silhouette_score(
 
     cluster_vectors: list[list[list[float]]] = []
     cluster_ids: list[str] = []
-    
+
     for cid, texts in clusters:
         vecs = []
         for text in texts:
@@ -52,37 +57,40 @@ def calculate_silhouette_score(
     for i, vecs_i in enumerate(cluster_vectors):
         if not vecs_i:
             continue
-            
+
         cluster_total_score = 0.0
         valid_points = 0
-        
+
         for v_idx, v in enumerate(vecs_i):
             if len(vecs_i) > 1:
-                a_i = sum((1.0 - cosine_similarity(v, other_v)) 
-                         for other_idx, other_v in enumerate(vecs_i) 
-                         if other_idx != v_idx) / (len(vecs_i) - 1)
+                a_i = sum(
+                    (1.0 - cosine_similarity(v, other_v))
+                    for other_idx, other_v in enumerate(vecs_i)
+                    if other_idx != v_idx
+                ) / (len(vecs_i) - 1)
             else:
                 a_i = 0.0
-            
-            b_i = float('inf')
+
+            b_i = float("inf")
             for j, vecs_j in enumerate(cluster_vectors):
                 if i == j or not vecs_j:
                     continue
-                mean_dist = sum((1.0 - cosine_similarity(v, other_v)) 
-                              for other_v in vecs_j) / len(vecs_j)
+                mean_dist = sum(
+                    (1.0 - cosine_similarity(v, other_v)) for other_v in vecs_j
+                ) / len(vecs_j)
                 if mean_dist < b_i:
                     b_i = mean_dist
-            
-            if b_i == float('inf'):
+
+            if b_i == float("inf"):
                 b_i = 0.0
-                
+
             max_ab = max(a_i, b_i)
             s_i = (b_i - a_i) / max_ab if max_ab > 0 else 0.0
-            
+
             cluster_total_score += s_i
             overall_scores.append(s_i)
             valid_points += 1
-            
+
         cluster_score_map[cluster_ids[i]] = cluster_total_score / valid_points
 
     overall = sum(overall_scores) / len(overall_scores) if overall_scores else 0.0
@@ -101,6 +109,7 @@ def compute_centroid(vectors: list[list[float]]) -> list[float]:
     count = len(vectors)
     return [x / count for x in centroid]
 
+
 def calculate_extended_metrics(
     clusters: list[tuple[str, list[str]]],
     vectors_by_text: dict[str, list[float]],
@@ -113,11 +122,11 @@ def calculate_extended_metrics(
             "davies_bouldin_score": 0.0,
             "topic_coherence": {},
         }
-        
+
     cluster_vectors: list[list[list[float]]] = []
     cluster_ids: list[str] = []
     all_vectors: list[list[float]] = []
-    
+
     for cid, texts in clusters:
         vecs = []
         for text in texts:
@@ -127,7 +136,7 @@ def calculate_extended_metrics(
                 all_vectors.append(v)
         cluster_vectors.append(vecs)
         cluster_ids.append(cid)
-        
+
     if not all_vectors:
         return {
             "silhouette_score": 0.0,
@@ -138,21 +147,21 @@ def calculate_extended_metrics(
 
     global_centroid = compute_centroid(all_vectors)
     centroids = [compute_centroid(cv) for cv in cluster_vectors]
-    
+
     # 1. Silhouette Score
     silhouette_res = calculate_silhouette_score(clusters, vectors_by_text)
-    
+
     # 2. Topic Coherence (Intra-cluster Similarity) & Scatter for DB
     topic_coherence: dict[str, float] = {}
     scatter: list[float] = []
     within_cluster_variance = 0.0
-    
+
     for i, vecs in enumerate(cluster_vectors):
         if not vecs:
             topic_coherence[cluster_ids[i]] = 0.0
             scatter.append(0.0)
             continue
-            
+
         coherence_sum = 0.0
         variance_sum = 0.0
         for v in vecs:
@@ -160,27 +169,31 @@ def calculate_extended_metrics(
             dist = max(0.0, 1.0 - sim)  # Ensure non-negative distance
             coherence_sum += sim
             variance_sum += dist
-            
+
         topic_coherence[cluster_ids[i]] = coherence_sum / len(vecs)
         scatter.append(variance_sum / len(vecs))
         within_cluster_variance += variance_sum
-        
+
     # 3. Calinski-Harabasz Index
     between_cluster_variance = 0.0
     for i, vecs in enumerate(cluster_vectors):
         if not vecs:
             continue
-        dist_to_global = max(0.0, 1.0 - cosine_similarity(centroids[i], global_centroid))
+        dist_to_global = max(
+            0.0, 1.0 - cosine_similarity(centroids[i], global_centroid)
+        )
         between_cluster_variance += len(vecs) * dist_to_global
-        
+
     n_samples = len(all_vectors)
     k_clusters = sum(1 for v in cluster_vectors if v)
-    
+
     if within_cluster_variance == 0.0 or k_clusters < 2 or n_samples <= k_clusters:
         ch_score = 0.0
     else:
-        ch_score = (between_cluster_variance / (k_clusters - 1)) / (within_cluster_variance / (n_samples - k_clusters))
-        
+        ch_score = (between_cluster_variance / (k_clusters - 1)) / (
+            within_cluster_variance / (n_samples - k_clusters)
+        )
+
     # 4. Davies-Bouldin Index
     db_ratios: list[float] = []
     for i in range(len(cluster_vectors)):
@@ -194,16 +207,16 @@ def calculate_extended_metrics(
             dist_ij = max(0.0, 1.0 - cosine_similarity(centroids[i], centroids[j]))
             if dist_ij == 0.0:
                 # To avoid division by zero, consider very close centroids as having a high penalty
-                r_ij = float('inf')
+                r_ij = float("inf")
             else:
                 r_ij = (scatter[i] + scatter[j]) / dist_ij
             if r_ij > max_r:
                 max_r = r_ij
             found_other = True
-        
-        if found_other and max_r != float('inf'):
+
+        if found_other and max_r != float("inf"):
             db_ratios.append(max_r)
-            
+
     db_score = sum(db_ratios) / len(db_ratios) if db_ratios else 0.0
 
     return {

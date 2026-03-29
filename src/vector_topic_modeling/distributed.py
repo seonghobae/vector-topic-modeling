@@ -14,10 +14,12 @@ from vector_topic_modeling.evaluation import (
 from vector_topic_modeling.clustering import cosine_similarity
 
 try:
+    valkey: Any
     import valkey
 
     VALKEY_AVAILABLE = True
 except ImportError:
+    valkey = None
     VALKEY_AVAILABLE = False
 
 

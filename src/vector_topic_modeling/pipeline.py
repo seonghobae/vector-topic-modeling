@@ -11,10 +11,6 @@ from vector_topic_modeling.clustering import (
     adaptive_greedy_cluster,
     rescue_display_dominance,
     stable_topic_id,
-    Cluster,
-    adaptive_greedy_cluster,
-    rescue_display_dominance,
-    stable_topic_id,
 )
 from vector_topic_modeling.providers.base import EmbeddingProvider
 from vector_topic_modeling.sessioning import (

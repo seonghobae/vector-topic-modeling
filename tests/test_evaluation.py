@@ -1,6 +1,10 @@
 from __future__ import annotations
 
-from vector_topic_modeling.evaluation import calculate_silhouette_score
+from vector_topic_modeling.evaluation import (
+    calculate_extended_metrics,
+    calculate_silhouette_score,
+    compute_centroid,
+)
 
 
 def test_silhouette_score_calculation():
@@ -9,7 +13,7 @@ def test_silhouette_score_calculation():
         ("c2", ["c", "d"]),
         ("c3", ["e"]),
     ]
-    
+
     vectors_by_text = {
         "a": [1.0, 0.0],
         "b": [0.9, 0.1],
@@ -17,9 +21,9 @@ def test_silhouette_score_calculation():
         "d": [0.1, 0.9],
         "e": [0.5, 0.5],
     }
-    
+
     result = calculate_silhouette_score(clusters, vectors_by_text)
-    
+
     assert result["overall_score"] > 0.0
     assert "c1" in result["cluster_scores"]
     assert "c2" in result["cluster_scores"]
@@ -43,11 +47,11 @@ def test_silhouette_score_empty_or_missing_vectors():
         ("c1", []),
         ("c2", ["a"]),
     ]
-    
+
     vectors_by_text = {
         "a": [0.0, 1.0],
     }
-    
+
     result = calculate_silhouette_score(clusters, vectors_by_text)
     assert result["overall_score"] == 0.0
     assert "c2" in result["cluster_scores"]
@@ -61,16 +65,17 @@ def test_silhouette_score_empty_or_missing_vectors():
     assert result2["overall_score"] == 0.0
 
 
-from vector_topic_modeling.evaluation import compute_centroid, calculate_extended_metrics
-
 def test_compute_centroid_empty() -> None:
     assert compute_centroid([]) == []
+
 
 def test_compute_centroid_single() -> None:
     assert compute_centroid([[1.0, 2.0]]) == [1.0, 2.0]
 
+
 def test_compute_centroid_multiple() -> None:
     assert compute_centroid([[1.0, 2.0], [3.0, 4.0]]) == [2.0, 3.0]
+
 
 def test_calculate_extended_metrics_fewer_than_2_clusters() -> None:
     clusters = [("c1", ["a", "b"])]
@@ -80,17 +85,16 @@ def test_calculate_extended_metrics_fewer_than_2_clusters() -> None:
     assert res["calinski_harabasz_score"] == 0.0
     assert res["davies_bouldin_score"] == 0.0
 
+
 def test_calculate_extended_metrics_empty_all_vectors() -> None:
     clusters = [("c1", ["x"]), ("c2", ["y"])]
     vectors = {"a": [1.0, 0.0]}
     res = calculate_extended_metrics(clusters, vectors)
     assert res["silhouette_score"] == 0.0
 
+
 def test_calculate_extended_metrics_valid() -> None:
-    clusters = [
-        ("c1", ["a", "b"]),
-        ("c2", ["c", "d"])
-    ]
+    clusters = [("c1", ["a", "b"]), ("c2", ["c", "d"])]
     vectors = {
         "a": [1.0, 0.0],
         "b": [0.9, 0.1],
@@ -104,12 +108,9 @@ def test_calculate_extended_metrics_valid() -> None:
     assert res["topic_coherence"]["c1"] > 0.9
     assert res["topic_coherence"]["c2"] > 0.9
 
+
 def test_calculate_extended_metrics_empty_cluster() -> None:
-    clusters = [
-        ("c1", ["a"]),
-        ("c2", ["x"]), # no vector
-        ("c3", ["b"])
-    ]
+    clusters = [("c1", ["a"]), ("c2", ["x"]), ("c3", ["b"])]  # no vector
     vectors = {
         "a": [1.0, 0.0],
         "b": [0.0, 1.0],
@@ -119,11 +120,9 @@ def test_calculate_extended_metrics_empty_cluster() -> None:
     assert "c2" in res["topic_coherence"]
     assert res["topic_coherence"]["c2"] == 0.0
 
+
 def test_calculate_extended_metrics_identical_centroids() -> None:
-    clusters = [
-        ("c1", ["a", "b"]),
-        ("c2", ["c", "d"])
-    ]
+    clusters = [("c1", ["a", "b"]), ("c2", ["c", "d"])]
     # Make vectors identical to force division by zero scenarios
     vectors = {
         "a": [1.0, 0.0],
@@ -136,49 +135,42 @@ def test_calculate_extended_metrics_identical_centroids() -> None:
     # DB score might be 0.0 or 0.0 depending on max_r accumulation
     assert res["davies_bouldin_score"] == 0.0
 
+
 def test_calculate_extended_metrics_db_infinity() -> None:
-    clusters = [
-        ("c1", ["a", "b"]),
-        ("c2", ["c", "d"]),
-        ("c3", ["e"])
-    ]
+    clusters = [("c1", ["a", "b"]), ("c2", ["c", "d"]), ("c3", ["e"])]
     vectors = {
         "a": [1.0, 0.0],
-        "b": [0.9, 0.1], # slightly spread
+        "b": [0.9, 0.1],  # slightly spread
         "c": [1.0, 0.0],
-        "d": [0.9, 0.1], # identical centroid to c1
-        "e": [0.0, 1.0]
+        "d": [0.9, 0.1],  # identical centroid to c1
+        "e": [0.0, 1.0],
     }
     res = calculate_extended_metrics(clusters, vectors)
     assert res["davies_bouldin_score"] >= 0.0
 
+
 def test_calculate_silhouette_score_fewer_than_2_clusters():
     res = calculate_silhouette_score([("c1", ["a", "b"])], {"a": [1.0], "b": [0.9]})
     assert res["overall_score"] == 0.0
-    
+
+
 def test_calculate_extended_metrics_db_dist_zero():
     # To hit 197: r_ij = float('inf') -> dist_ij == 0.0
     # To hit 200->202: if r_ij > max_r -> False. So we need r_ij not greater than max_r. But if it's inf, it's always greater.
     # Wait, if r_ij is negative or something? r_ij is distance.
     # Let's write a test where dist_ij is exactly 0.0
-    clusters = [
-        ("c1", ["a"]),
-        ("c2", ["b"])
-    ]
+    clusters = [("c1", ["a"]), ("c2", ["b"])]
     vectors = {
         "a": [1.0, 0.0],
-        "b": [1.0, 0.0]  # Identical to 'a' to make dist_ij == 0.0
+        "b": [1.0, 0.0],  # Identical to 'a' to make dist_ij == 0.0
     }
     res = calculate_extended_metrics(clusters, vectors)
     assert res["davies_bouldin_score"] == 0.0
 
+
 def test_calculate_extended_metrics_db_smaller_r_ij():
     # To hit 200->202 false branch: `r_ij > max_r` is False
-    clusters = [
-        ("c1", ["a"]),
-        ("c2", ["b"]),
-        ("c3", ["c"])
-    ]
+    clusters = [("c1", ["a"]), ("c2", ["b"]), ("c3", ["c"])]
     vectors = {
         "a": [1.0, 0.0],
         "b": [0.9, 0.1],  # Close to 'a', so high r_ij
@@ -189,17 +181,13 @@ def test_calculate_extended_metrics_db_smaller_r_ij():
     res = calculate_extended_metrics(clusters, vectors)
     assert res["davies_bouldin_score"] > 0.0
 
+
 def test_silhouette_mean_dist_not_less():
     # Hit 73->68: if mean_dist < b_i is False
     clusters = [
         ("c1", ["a"]),
-        ("c2", ["b"]), # closer to a
-        ("c3", ["c"])  # further from a
+        ("c2", ["b"]),  # closer to a
+        ("c3", ["c"]),  # further from a
     ]
-    vectors = {
-        "a": [1.0, 0.0],
-        "b": [0.9, 0.1],
-        "c": [0.0, 1.0]
-    }
+    vectors = {"a": [1.0, 0.0], "b": [0.9, 0.1], "c": [0.0, 1.0]}
     calculate_silhouette_score(clusters, vectors)
-
