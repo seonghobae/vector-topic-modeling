@@ -1,5 +1,7 @@
 # 일반 문서 주제 분류(Topic Modeling) 사용자 매뉴얼
 
+<!-- markdownlint-disable MD013 -->
+
 이 매뉴얼은 채팅 기록이나 세션 기반의 데이터가 아닌, **일반 문서(뉴스 기사, 보고서, 블로그 포스트, 논문 요약 등)**를 대상으로 `vector-topic-modeling` 패키지를 활용하는 방법에 초점을 맞춥니다.
 
 ## 1. 일반 문서 처리에 대한 이해
@@ -11,6 +13,7 @@
 문서 한 건당 한 줄의 JSON 객체를 포함하는 `.jsonl` 파일을 준비합니다.
 
 ### 2.1 기본 형태
+
 가장 직관적인 방법은 `id`와 `text` 필드만을 포함하는 것입니다.
 
 ```json
@@ -20,9 +23,11 @@
 ```
 
 ### 2.2 기존 데이터베이스 형태 변환 없이 사용 (`--ingestion-config`)
+
 이미 가지고 있는 문서 데이터에 `text` 대신 `content`, `body`, `article` 등의 필드명이 사용되고 있다면 데이터 자체를 수정할 필요 없이 `ingestion-config`를 설정하여 맵핑할 수 있습니다.
 
 **config.json:**
+
 ```json
 {
   "id_fields": ["article_id", "url"],
@@ -51,7 +56,10 @@ vector-topic-modeling cluster my_documents.jsonl \
 
 ```python
 from vector_topic_modeling import TopicDocument, TopicModelConfig, TopicModeler
-from vector_topic_modeling.providers.openai_compat import OpenAICompatEmbeddingProvider
+from vector_topic_modeling.providers.openai_compat import (
+    OpenAICompatConfig,
+    OpenAICompatEmbeddingProvider,
+)
 
 # 1. 일반 문서 리스트 생성 (session_id 배제)
 docs = [
@@ -62,9 +70,11 @@ docs = [
 
 # 2. 임베딩 프로바이더 설정
 provider = OpenAICompatEmbeddingProvider(
-    base_url="https://api.openai.com/v1",
-    api_key="sk-...",
-    model="text-embedding-3-large"
+    OpenAICompatConfig(
+        base_url="https://api.openai.com",
+        api_key="sk-...",
+        model="text-embedding-3-large",
+    )
 )
 
 # 3. 모델러 초기화 및 클러스터링 실행
@@ -82,8 +92,8 @@ result = modeler.fit_predict(docs)
 
 print(f"발견된 토픽 수: {len(result.topics)}")
 for topic in result.topics:
-    print(f"Topic ID: {topic.id} (문서 수: {topic.count})")
-    print(f"대표 문서: {topic.display_texts[0]}")
+    print(f"Topic ID: {topic.topic_id} (문서 수: {topic.total_count})")
+    print(f"대표 문서: {topic.texts[0]}")
 ```
 
 ## 5. 자주 묻는 질문 (FAQ)
@@ -94,10 +104,12 @@ for topic in result.topics:
   - A. 아닙니다. 세션 정보는 동일 사용자의 여러 대화를 묶기 위한 부가 기능일 뿐입니다. 일반 문서는 순수하게 텍스트 간 코사인 유사도(Cosine Similarity)를 통해 정확한 의미 기반 클러스터링을 수행합니다.
 
 - **Q. 시작할 때는 어떤 토픽(topic_id)이 있는지 전혀 모르는 상태인데 어떻게 하나요?**
-  - A. 정확합니다. 이 패키지는 사전에 정의된 카테고리를 맞추는 분류(Classification)가 아니라, 데이터 스스로 뭉치게 만드는 **비지도 학습 군집화(Unsupervised Clustering)** 도구입니다. 
+  - A. 정확합니다. 이 패키지는 사전에 정의된 카테고리를 맞추는 분류(Classification)가 아니라, 데이터 스스로 뭉치게 만드는 **비지도 학습 군집화(Unsupervised Clustering)** 도구입니다.
     사용자는 `topic_id`를 전혀 제공할 필요가 없으며 오직 `id`와 `text`만 입력합니다. 시스템이 의미가 비슷한 문서들을 묶은 뒤, 해당 군집(Cluster)을 대표하는 **고유한 `topic_id`를 자동으로 생성**하여 결과물에 할당(`assignments`)해 줍니다.
 
 - **Q. 최적의 토픽 개수(k)를 찾는 수학적인 해(Mathematical Solution)는 무엇인가요?**
-  - A. 이 패키지는 실무적인 편의를 위해 '탐욕적 휴리스틱 알고리즘(Greedy Heuristic Algorithm)'을 기본으로 사용하고 있습니다. 
+  - A. 이 패키지는 실무적인 편의를 위해 '탐욕적 휴리스틱 알고리즘(Greedy Heuristic Algorithm)'을 기본으로 사용하고 있습니다.
     그러나 엄밀한 수학적/통계적 관점에서 최적의 군집 수(k)를 평가하기 위해 패키지 내부에 **실루엣 점수(Silhouette Score)** 및 **Calinski-Harabasz, Davies-Bouldin** 지표 계산 기능이 내장되어 있습니다. CLI에서 `--calculate-silhouette`나 `--calculate-extended-metrics` 옵션을 사용하거나 파이썬 API에서 설정하면 외부 라이브러리(Scikit-Learn 등) 없이도 군집 품질을 확인할 수 있습니다. 데이터가 클 경우 Valkey를 통한 분산 처리(`--use-distributed-evaluation`)도 지원합니다.
     - **실루엣 점수**: 각 데이터 포인트가 같은 군집 내의 데이터와 얼마나 가깝고, 다른 군집의 데이터와 얼마나 먼지를 계산하여 -1에서 1 사이의 값으로 평가합니다. 1에 가까울수록 군집화가 잘 되었다고 판단할 수 있습니다.
+
+<!-- markdownlint-enable MD013 -->
