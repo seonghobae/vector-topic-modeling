@@ -19,6 +19,12 @@ from vector_topic_modeling.sessioning import (
     pick_session_main_digest,
 )
 from vector_topic_modeling.text import normalize_text
+from vector_topic_modeling.evaluation import (
+    SilhouetteResult,
+    calculate_silhouette_score,
+    ClusteringMetrics,
+)
+from vector_topic_modeling.distributed import calculate_distributed_metrics
 
 
 class PreparedRow(TypedDict):
@@ -57,6 +63,11 @@ class TopicModelConfig:
     use_session_representatives: bool = False
     display_limit: int = 30
     embedding_model_name: str = "embedding-provider"
+    calculate_silhouette: bool = False
+    calculate_extended_metrics: bool = False
+    use_distributed_evaluation: bool = False
+    valkey_url: str = "redis://localhost:6379"
+    valkey_workers: int = 4
 
 
 @dataclass(frozen=True)
@@ -85,6 +96,8 @@ class TopicModelResult:
     assignments: list[TopicAssignment]
     session_topic_counts: dict[tuple[str, str], int]
     topic_lookup: dict[str, Topic]
+    silhouette_score: SilhouetteResult | None = None
+    extended_metrics: ClusteringMetrics | None = None
 
 
 class TopicModeler:
@@ -168,11 +181,36 @@ class TopicModeler:
             session_representatives=session_representatives,
         )
         topic_lookup = {topic.topic_id: topic for topic in topics}
+        silhouette = None
+        extended_metrics = None
+        cluster_input = [(topic.topic_id, topic.texts) for topic in topics]
+        vectors_by_text = {text: vector for text, (vector, _) in items_by_text.items()}
+
+        if self.config.calculate_silhouette:
+            silhouette = calculate_silhouette_score(cluster_input, vectors_by_text)
+
+        if self.config.calculate_extended_metrics:
+            if self.config.use_distributed_evaluation:
+                extended_metrics = calculate_distributed_metrics(
+                    cluster_input,
+                    vectors_by_text,
+                    valkey_url=self.config.valkey_url,
+                    num_workers=self.config.valkey_workers,
+                )
+            else:
+                from vector_topic_modeling.evaluation import calculate_extended_metrics
+
+                extended_metrics = calculate_extended_metrics(
+                    cluster_input, vectors_by_text
+                )
+
         return TopicModelResult(
             topics=topics,
             assignments=assignments,
             session_topic_counts=session_topic_counts,
             topic_lookup=topic_lookup,
+            silhouette_score=silhouette,
+            extended_metrics=extended_metrics,
         )
 
     def _prepare_row(self, document: TopicDocument) -> PreparedRow:

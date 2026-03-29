@@ -196,3 +196,96 @@ def test_fit_predict_allows_sessions_without_selected_representative(
     result = modeler.fit_predict(docs)
 
     assert len(result.assignments) == 2
+
+
+def test_pipeline_silhouette_score() -> None:
+    """Test that pipeline correctly calculates silhouette score when enabled."""
+    provider = FakeEmbeddingProvider(
+        {
+            "apple orange": [1.0, 0.0],
+            "cat dog": [0.0, 1.0],
+        }
+    )
+    docs = [
+        TopicDocument(id="1", text="apple orange"),
+        TopicDocument(id="2", text="apple orange"),
+        TopicDocument(id="3", text="cat dog"),
+        TopicDocument(id="4", text="cat dog"),
+    ]
+    modeler = TopicModeler(
+        embedding_provider=provider,
+        config=TopicModelConfig(min_topics=2, max_topics=2, calculate_silhouette=True),
+    )
+    result = modeler.fit_predict(docs)
+    assert result.silhouette_score is not None
+    assert "overall_score" in result.silhouette_score
+    assert isinstance(result.silhouette_score["overall_score"], float)
+
+
+def test_pipeline_extended_metrics_local() -> None:
+    """Test that pipeline correctly calculates extended metrics locally when enabled."""
+    provider = FakeEmbeddingProvider(
+        {
+            "apple orange": [1.0, 0.0],
+            "cat dog": [0.0, 1.0],
+        }
+    )
+    docs = [
+        TopicDocument(id="1", text="apple orange"),
+        TopicDocument(id="2", text="apple orange"),
+        TopicDocument(id="3", text="cat dog"),
+        TopicDocument(id="4", text="cat dog"),
+    ]
+    modeler = TopicModeler(
+        embedding_provider=provider,
+        config=TopicModelConfig(
+            min_topics=2,
+            max_topics=2,
+            calculate_extended_metrics=True,
+            use_distributed_evaluation=False,
+        ),
+    )
+    result = modeler.fit_predict(docs)
+    assert result.extended_metrics is not None
+    assert "calinski_harabasz_score" in result.extended_metrics
+
+
+def test_pipeline_extended_metrics_distributed(mocker) -> None:
+    """Test that pipeline correctly calculates extended metrics distributed when enabled."""
+    provider = FakeEmbeddingProvider(
+        {
+            "apple orange": [1.0, 0.0],
+            "cat dog": [0.0, 1.0],
+        }
+    )
+    docs = [
+        TopicDocument(id="1", text="apple orange"),
+        TopicDocument(id="2", text="apple orange"),
+        TopicDocument(id="3", text="cat dog"),
+        TopicDocument(id="4", text="cat dog"),
+    ]
+    modeler = TopicModeler(
+        embedding_provider=provider,
+        config=TopicModelConfig(
+            min_topics=2,
+            max_topics=2,
+            calculate_extended_metrics=True,
+            use_distributed_evaluation=True,
+        ),
+    )
+
+    mock_calc = mocker.patch(
+        "vector_topic_modeling.pipeline.calculate_distributed_metrics"
+    )
+    mock_calc.return_value = {
+        "silhouette_score": 1.0,
+        "calinski_harabasz_score": 2.0,
+        "davies_bouldin_score": 3.0,
+        "topic_coherence": {},
+    }
+
+    result = modeler.fit_predict(docs)
+
+    mock_calc.assert_called_once()
+    assert result.extended_metrics is not None
+    assert result.extended_metrics["silhouette_score"] == 1.0

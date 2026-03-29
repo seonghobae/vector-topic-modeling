@@ -73,6 +73,19 @@ def test_build_smoke_commands_cover_import_and_cli_entrypoint(tmp_path: Path) ->
         "cluster",
         "--help",
     ]
+    assert commands[4] == [
+        str(bin_dir / "python"),
+        "-m",
+        "vector_topic_modeling",
+        "--help",
+    ]
+    assert commands[5] == [
+        str(bin_dir / "python"),
+        "-m",
+        "vector_topic_modeling",
+        "cluster",
+        "--help",
+    ]
 
 
 def test_windows_smoke_commands_use_python_exe(tmp_path: Path) -> None:

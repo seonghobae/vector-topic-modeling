@@ -1,6 +1,6 @@
 # Architecture Overview
 
-Last updated: 2026-03-28
+Last updated: 2026-03-29
 
 ## Project structure
 
@@ -15,6 +15,8 @@ Last updated: 2026-03-28
 │   ├── service.py
 │   ├── pipeline.py
 │   ├── ingestion.py
+│   ├── evaluation.py
+│   ├── distributed.py
 │   ├── cli.py
 │   └── providers/
 ├── examples/                  # Runnable local examples and sample JSONL
@@ -35,6 +37,12 @@ Last updated: 2026-03-28
    kernel.
 6. Optional session-aware digest selection prevents repeated boilerplate
    from dominating.
+7. Optional extended metrics (Silhouette, Calinski-Harabasz, Davies-Bouldin)
+   can be calculated via `evaluation.py`, and can be parallelized using Valkey
+   (`distributed.py`) to reduce heavy pairwise distance computation time. Both
+   local and distributed silhouette paths short-circuit to neutral scores when
+   fewer than two populated clusters remain after vector filtering, and the
+   distributed path falls back to local metrics if worker output is partial.
 
 ## Explicit exclusions
 
