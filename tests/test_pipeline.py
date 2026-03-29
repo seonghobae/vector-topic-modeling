@@ -289,3 +289,134 @@ def test_pipeline_extended_metrics_distributed(mocker) -> None:
     mock_calc.assert_called_once()
     assert result.extended_metrics is not None
     assert result.extended_metrics["silhouette_score"] == 1.0
+
+
+def test_pipeline_reuses_precomputed_silhouette_for_local_extended_metrics(
+    mocker,
+) -> None:
+    provider = FakeEmbeddingProvider(
+        {
+            "apple orange": [1.0, 0.0],
+            "cat dog": [0.0, 1.0],
+        }
+    )
+    docs = [
+        TopicDocument(id="1", text="apple orange"),
+        TopicDocument(id="2", text="apple orange"),
+        TopicDocument(id="3", text="cat dog"),
+        TopicDocument(id="4", text="cat dog"),
+    ]
+    modeler = TopicModeler(
+        embedding_provider=provider,
+        config=TopicModelConfig(
+            min_topics=2,
+            max_topics=2,
+            calculate_silhouette=True,
+            calculate_extended_metrics=True,
+            use_distributed_evaluation=False,
+        ),
+    )
+
+    mocker.patch(
+        "vector_topic_modeling.pipeline.calculate_silhouette_score",
+        return_value={"overall_score": 0.4, "cluster_scores": {"t1": 0.4}},
+    )
+    extended_mock = mocker.patch(
+        "vector_topic_modeling.evaluation.calculate_extended_metrics",
+        return_value={
+            "silhouette_score": 0.4,
+            "calinski_harabasz_score": 1.0,
+            "davies_bouldin_score": 0.3,
+            "topic_coherence": {},
+        },
+    )
+
+    modeler.fit_predict(docs)
+
+    assert extended_mock.call_args.kwargs["precomputed_silhouette"] == 0.4
+
+
+def test_pipeline_reuses_precomputed_silhouette_for_distributed_metrics(
+    mocker,
+) -> None:
+    provider = FakeEmbeddingProvider(
+        {
+            "apple orange": [1.0, 0.0],
+            "cat dog": [0.0, 1.0],
+        }
+    )
+    docs = [
+        TopicDocument(id="1", text="apple orange"),
+        TopicDocument(id="2", text="apple orange"),
+        TopicDocument(id="3", text="cat dog"),
+        TopicDocument(id="4", text="cat dog"),
+    ]
+    modeler = TopicModeler(
+        embedding_provider=provider,
+        config=TopicModelConfig(
+            min_topics=2,
+            max_topics=2,
+            calculate_silhouette=True,
+            calculate_extended_metrics=True,
+            use_distributed_evaluation=True,
+        ),
+    )
+
+    mocker.patch(
+        "vector_topic_modeling.pipeline.calculate_silhouette_score",
+        return_value={"overall_score": 0.55, "cluster_scores": {"t1": 0.55}},
+    )
+    distributed_mock = mocker.patch(
+        "vector_topic_modeling.pipeline.calculate_distributed_metrics",
+        return_value={
+            "silhouette_score": 0.55,
+            "calinski_harabasz_score": 1.2,
+            "davies_bouldin_score": 0.2,
+            "topic_coherence": {},
+        },
+    )
+
+    modeler.fit_predict(docs)
+
+    assert distributed_mock.call_args.kwargs["precomputed_silhouette"] == 0.55
+
+
+def test_pipeline_extended_metrics_without_silhouette_passes_none_precomputed(
+    mocker,
+) -> None:
+    provider = FakeEmbeddingProvider(
+        {
+            "apple orange": [1.0, 0.0],
+            "cat dog": [0.0, 1.0],
+        }
+    )
+    docs = [
+        TopicDocument(id="1", text="apple orange"),
+        TopicDocument(id="2", text="apple orange"),
+        TopicDocument(id="3", text="cat dog"),
+        TopicDocument(id="4", text="cat dog"),
+    ]
+    modeler = TopicModeler(
+        embedding_provider=provider,
+        config=TopicModelConfig(
+            min_topics=2,
+            max_topics=2,
+            calculate_silhouette=False,
+            calculate_extended_metrics=True,
+            use_distributed_evaluation=False,
+        ),
+    )
+
+    extended_mock = mocker.patch(
+        "vector_topic_modeling.evaluation.calculate_extended_metrics",
+        return_value={
+            "silhouette_score": 0.1,
+            "calinski_harabasz_score": 1.0,
+            "davies_bouldin_score": 0.2,
+            "topic_coherence": {},
+        },
+    )
+
+    modeler.fit_predict(docs)
+
+    assert extended_mock.call_args.kwargs["precomputed_silhouette"] is None

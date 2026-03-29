@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import math
+
 from vector_topic_modeling.evaluation import (
     calculate_extended_metrics,
     calculate_silhouette_score,
@@ -28,6 +30,7 @@ def test_silhouette_score_calculation():
     assert "c1" in result["cluster_scores"]
     assert "c2" in result["cluster_scores"]
     assert "c3" in result["cluster_scores"]
+    assert result["cluster_scores"]["c3"] == 0.0
 
 
 def test_silhouette_score_single_cluster():
@@ -109,6 +112,28 @@ def test_calculate_extended_metrics_valid() -> None:
     assert res["topic_coherence"]["c2"] > 0.9
 
 
+def test_calculate_extended_metrics_uses_precomputed_silhouette(mocker) -> None:
+    clusters = [("c1", ["a", "b"]), ("c2", ["c", "d"])]
+    vectors = {
+        "a": [1.0, 0.0],
+        "b": [0.9, 0.1],
+        "c": [0.0, 1.0],
+        "d": [0.1, 0.9],
+    }
+    silhouette_mock = mocker.patch(
+        "vector_topic_modeling.evaluation.calculate_silhouette_score"
+    )
+
+    res = calculate_extended_metrics(
+        clusters,
+        vectors,
+        precomputed_silhouette=0.123,
+    )
+
+    assert res["silhouette_score"] == 0.123
+    silhouette_mock.assert_not_called()
+
+
 def test_calculate_extended_metrics_empty_cluster() -> None:
     clusters = [("c1", ["a"]), ("c2", ["x"]), ("c3", ["b"])]  # no vector
     vectors = {
@@ -116,7 +141,7 @@ def test_calculate_extended_metrics_empty_cluster() -> None:
         "b": [0.0, 1.0],
     }
     res = calculate_extended_metrics(clusters, vectors)
-    assert res["silhouette_score"] > 0.0
+    assert res["silhouette_score"] == 0.0
     assert "c2" in res["topic_coherence"]
     assert res["topic_coherence"]["c2"] == 0.0
 
@@ -132,8 +157,8 @@ def test_calculate_extended_metrics_identical_centroids() -> None:
     }
     res = calculate_extended_metrics(clusters, vectors)
     assert res["calinski_harabasz_score"] == 0.0
-    # DB score might be 0.0 or 0.0 depending on max_r accumulation
-    assert res["davies_bouldin_score"] == 0.0
+    assert math.isfinite(res["davies_bouldin_score"])
+    assert res["davies_bouldin_score"] > 0.0
 
 
 def test_calculate_extended_metrics_db_infinity() -> None:
@@ -162,7 +187,8 @@ def test_calculate_extended_metrics_db_dist_zero():
         "b": [1.0, 0.0],  # Identical to 'a' to make dist_ij == 0.0
     }
     res = calculate_extended_metrics(clusters, vectors)
-    assert res["davies_bouldin_score"] == 0.0
+    assert math.isfinite(res["davies_bouldin_score"])
+    assert res["davies_bouldin_score"] > 0.0
 
 
 def test_calculate_extended_metrics_db_smaller_r_ij():

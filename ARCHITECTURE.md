@@ -39,10 +39,13 @@ Last updated: 2026-03-29
    from dominating.
 7. Optional extended metrics (Silhouette, Calinski-Harabasz, Davies-Bouldin)
    can be calculated via `evaluation.py`, and can be parallelized using Valkey
-   (`distributed.py`) to reduce heavy pairwise distance computation time. Both
-   local and distributed silhouette paths short-circuit to neutral scores when
-   fewer than two populated clusters remain after vector filtering, and the
-   distributed path falls back to local metrics if worker output is partial.
+   (`distributed.py`) to reduce heavy pairwise distance computation time. The
+   pipeline reuses precomputed silhouette scores when both silhouette and
+   extended metrics are requested so the expensive O(N²) pass is not repeated.
+   Both local and distributed silhouette paths normalize singleton clusters to
+   neutral `0.0`, short-circuit to neutral scores when fewer than two populated
+   clusters remain after vector filtering, and distributed workers/keys are
+   cleaned up via `try/finally` even when worker orchestration errors occur.
 
 ## Explicit exclusions
 

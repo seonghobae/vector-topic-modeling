@@ -23,6 +23,9 @@ class SilhouetteResult(TypedDict):
     cluster_scores: dict[str, float]
 
 
+LARGE_DB_PENALTY = 1_000_000.0
+
+
 def calculate_silhouette_score(
     clusters: list[tuple[str, list[str]]],
     vectors_by_text: dict[str, list[float]],
@@ -65,14 +68,18 @@ def calculate_silhouette_score(
         valid_points = 0
 
         for v_idx, v in enumerate(vecs_i):
-            if len(vecs_i) > 1:
-                a_i = sum(
-                    (1.0 - cosine_similarity(v, other_v))
-                    for other_idx, other_v in enumerate(vecs_i)
-                    if other_idx != v_idx
-                ) / (len(vecs_i) - 1)
-            else:
-                a_i = 0.0
+            if len(vecs_i) == 1:
+                s_i = 0.0
+                cluster_total_score += s_i
+                overall_scores.append(s_i)
+                valid_points += 1
+                continue
+
+            a_i = sum(
+                (1.0 - cosine_similarity(v, other_v))
+                for other_idx, other_v in enumerate(vecs_i)
+                if other_idx != v_idx
+            ) / (len(vecs_i) - 1)
 
             b_i = float("inf")
             for j, vecs_j in enumerate(cluster_vectors):
@@ -113,6 +120,7 @@ def compute_centroid(vectors: list[list[float]]) -> list[float]:
 def calculate_extended_metrics(
     clusters: list[tuple[str, list[str]]],
     vectors_by_text: dict[str, list[float]],
+    precomputed_silhouette: float | None = None,
 ) -> ClusteringMetrics:
     """Calculate Silhouette, Calinski-Harabasz, Davies-Bouldin, and Coherence metrics."""
     if len(clusters) < 2:
@@ -149,7 +157,12 @@ def calculate_extended_metrics(
     centroids = [compute_centroid(cv) for cv in cluster_vectors]
 
     # 1. Silhouette Score
-    silhouette_res = calculate_silhouette_score(clusters, vectors_by_text)
+    if precomputed_silhouette is None:
+        silhouette_score = calculate_silhouette_score(clusters, vectors_by_text)[
+            "overall_score"
+        ]
+    else:
+        silhouette_score = precomputed_silhouette
 
     # 2. Topic Coherence (Intra-cluster Similarity) & Scatter for DB
     topic_coherence: dict[str, float] = {}
@@ -206,21 +219,20 @@ def calculate_extended_metrics(
                 continue
             dist_ij = max(0.0, 1.0 - cosine_similarity(centroids[i], centroids[j]))
             if dist_ij == 0.0:
-                # To avoid division by zero, consider very close centroids as having a high penalty
-                r_ij = float("inf")
+                # Strong finite penalty for overlapping centroids.
+                r_ij = LARGE_DB_PENALTY
             else:
                 r_ij = (scatter[i] + scatter[j]) / dist_ij
-            if r_ij > max_r:
-                max_r = r_ij
+            max_r = max(max_r, r_ij)
             found_other = True
 
-        if found_other and max_r != float("inf"):
+        if found_other:
             db_ratios.append(max_r)
 
     db_score = sum(db_ratios) / len(db_ratios) if db_ratios else 0.0
 
     return {
-        "silhouette_score": silhouette_res["overall_score"],
+        "silhouette_score": silhouette_score,
         "calinski_harabasz_score": ch_score,
         "davies_bouldin_score": db_score,
         "topic_coherence": topic_coherence,

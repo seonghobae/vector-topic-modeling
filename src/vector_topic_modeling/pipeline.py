@@ -189,6 +189,10 @@ class TopicModeler:
         if self.config.calculate_silhouette:
             silhouette = calculate_silhouette_score(cluster_input, vectors_by_text)
 
+        precomputed_silhouette = (
+            silhouette["overall_score"] if silhouette is not None else None
+        )
+
         if self.config.calculate_extended_metrics:
             if self.config.use_distributed_evaluation:
                 extended_metrics = calculate_distributed_metrics(
@@ -196,12 +200,15 @@ class TopicModeler:
                     vectors_by_text,
                     valkey_url=self.config.valkey_url,
                     num_workers=self.config.valkey_workers,
+                    precomputed_silhouette=precomputed_silhouette,
                 )
             else:
                 from vector_topic_modeling.evaluation import calculate_extended_metrics
 
                 extended_metrics = calculate_extended_metrics(
-                    cluster_input, vectors_by_text
+                    cluster_input,
+                    vectors_by_text,
+                    precomputed_silhouette=precomputed_silhouette,
                 )
 
         return TopicModelResult(

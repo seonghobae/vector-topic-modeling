@@ -30,6 +30,7 @@ def calculate_distributed_metrics(
     vectors_by_text: dict[str, list[float]],
     valkey_url: str = "redis://localhost:6379",
     num_workers: int = 4,
+    precomputed_silhouette: float | None = None,
 ) -> ClusteringMetrics:
     """Calculate extended metrics using Valkey for distributed distance calculation."""
     if not VALKEY_AVAILABLE:
@@ -39,7 +40,11 @@ def calculate_distributed_metrics(
 
     # Extended metrics (CH, DB, Coherence) are O(K*N) or O(K^2), so we do them locally
     # The silhouette score is O(N^2), so we distribute it.
-    base_metrics = calculate_extended_metrics(clusters, vectors_by_text)
+    base_metrics = calculate_extended_metrics(
+        clusters,
+        vectors_by_text,
+        precomputed_silhouette=precomputed_silhouette,
+    )
 
     if len(clusters) < 2:
         return base_metrics
@@ -55,6 +60,11 @@ def calculate_distributed_metrics(
             break
 
     if not has_vectors:
+        return base_metrics
+
+    # If silhouette was already computed by the pipeline, avoid duplicating
+    # distributed O(N^2) work and reuse the precomputed value.
+    if precomputed_silhouette is not None:
         return base_metrics
 
     client = valkey.Valkey.from_url(valkey_url, decode_responses=True)
@@ -76,6 +86,7 @@ def calculate_distributed_metrics(
 
     non_empty_clusters = sum(1 for indices in cluster_indices if indices)
     if non_empty_clusters < 2:
+        base_metrics["silhouette_score"] = 0.0
         return base_metrics
 
     # Store data in Valkey
@@ -84,30 +95,32 @@ def calculate_distributed_metrics(
     tasks_key = f"{job_id}:tasks"
     results_key = f"{job_id}:results"
 
-    client.set(vectors_key, json.dumps(flat_vectors))
-    client.set(clusters_key, json.dumps(cluster_indices))
+    results: dict[str, str] = {}
+    try:
+        client.set(vectors_key, json.dumps(flat_vectors))
+        client.set(clusters_key, json.dumps(cluster_indices))
 
-    tasks = list(range(len(flat_vectors)))
-    client.rpush(tasks_key, *tasks)
+        tasks = list(range(len(flat_vectors)))
+        client.rpush(tasks_key, *tasks)
 
-    # Start workers
-    threads = []
-    for _ in range(num_workers):
-        t = threading.Thread(target=_worker_loop, args=(valkey_url, job_id))
-        t.start()
-        threads.append(t)
+        # Start workers
+        threads = []
+        for _ in range(num_workers):
+            t = threading.Thread(target=_worker_loop, args=(valkey_url, job_id))
+            t.start()
+            threads.append(t)
 
-    for t in threads:
-        t.join()
+        for t in threads:
+            t.join()
 
-    # Read results
-    results = client.hgetall(results_key)
-
-    # Clean up
-    client.delete(vectors_key)
-    client.delete(clusters_key)
-    client.delete(tasks_key)
-    client.delete(results_key)
+        # Read results
+        results = client.hgetall(results_key)
+    finally:
+        # Clean up
+        client.delete(vectors_key)
+        client.delete(clusters_key)
+        client.delete(tasks_key)
+        client.delete(results_key)
 
     if not results or len(results) != len(flat_vectors):
         # Fallback if workers failed
@@ -162,14 +175,15 @@ def _worker_loop(valkey_url: str, job_id: str) -> None:
 
         # Calculate a_i
         same_cluster_indices = cluster_indices[c_i]
-        if len(same_cluster_indices) > 1:
-            a_i = sum(
-                1.0 - cosine_similarity(v_i, vectors[j])
-                for j in same_cluster_indices
-                if j != i
-            ) / (len(same_cluster_indices) - 1)
-        else:
-            a_i = 0.0
+        if len(same_cluster_indices) == 1:
+            client.hset(results_key, str(i), "0.0")
+            continue
+
+        a_i = sum(
+            1.0 - cosine_similarity(v_i, vectors[j])
+            for j in same_cluster_indices
+            if j != i
+        ) / (len(same_cluster_indices) - 1)
 
         # Calculate b_i
         b_i = float("inf")
