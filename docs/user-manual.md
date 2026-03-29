@@ -137,6 +137,11 @@ vector-topic-modeling cluster INPUT_JSONL --output OUTPUT_JSON
 | `--max-top-share` | no | `0.35` | Dominant-topic cap for adaptive clustering and rescue (`0 < x <= 1`) |
 | `--display-limit` | no | `30` | Max representative examples per topic (`>= 0`) |
 | `--use-session-representatives` | no | `false` | Use one representative digest per session for counting and assignment fallback |
+| `--calculate-silhouette` | no | `false` | Calculate and append Silhouette Score evaluation metric to the output JSON |
+| `--calculate-extended-metrics` | no | `false` | Calculate and append Calinski-Harabasz and Davies-Bouldin metrics to the output JSON |
+| `--use-distributed-evaluation` | no | `false` | Use Valkey to distribute metric calculation workloads |
+| `--valkey-url` | no | `redis://localhost:6379` | Valkey URL for distributed evaluation |
+| `--valkey-workers` | no | `4` | Number of Valkey workers |
 | `--ingestion-config` | no | - | JSON config for generic row ingestion |
 <!-- markdownlint-enable MD013 -->
 

@@ -38,6 +38,11 @@ def build_parser() -> argparse.ArgumentParser:
     cluster.add_argument("--max-top-share", type=float, default=0.35)
     cluster.add_argument("--display-limit", type=int, default=30)
     cluster.add_argument("--use-session-representatives", action="store_true")
+    cluster.add_argument("--calculate-silhouette", action="store_true")
+    cluster.add_argument("--calculate-extended-metrics", action="store_true")
+    cluster.add_argument("--use-distributed-evaluation", action="store_true")
+    cluster.add_argument("--valkey-url", default="redis://localhost:6379")
+    cluster.add_argument("--valkey-workers", type=int, default=4)
     cluster.add_argument("--ingestion-config")
     return parser
 
@@ -83,11 +88,18 @@ def main(argv: list[str] | None = None) -> int:
             max_top_share=args.max_top_share,
             use_session_representatives=args.use_session_representatives,
             display_limit=args.display_limit,
+            calculate_silhouette=args.calculate_silhouette,
+            calculate_extended_metrics=args.calculate_extended_metrics,
+            use_distributed_evaluation=args.use_distributed_evaluation,
+            valkey_url=args.valkey_url,
+            valkey_workers=args.valkey_workers,
         ),
     )
     result = modeler.fit_predict(docs)
     payload = {
         "topics": [topic.__dict__ for topic in result.topics],
+        "silhouette_score": result.silhouette_score,
+        "extended_metrics": result.extended_metrics,
         "assignments": [assignment.__dict__ for assignment in result.assignments],
         "session_topic_counts": [
             {"session_id": session_id, "topic_id": topic_id, "count": count}

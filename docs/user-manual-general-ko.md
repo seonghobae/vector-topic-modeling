@@ -99,7 +99,5 @@ for topic in result.topics:
 
 - **Q. 최적의 토픽 개수(k)를 찾는 수학적인 해(Mathematical Solution)는 무엇인가요?**
   - A. 이 패키지는 실무적인 편의를 위해 '탐욕적 휴리스틱 알고리즘(Greedy Heuristic Algorithm)'을 기본으로 사용하고 있습니다. 
-    그러나 엄밀한 수학적/통계적 관점에서 최적의 군집 수(k)를 찾는 고전적인 방법론들이 존재합니다. 필요하다면 파이썬 API를 통해 임베딩된 벡터(`embedding_provider`의 결과물)를 추출한 뒤, Scikit-Learn 등을 활용하여 다음과 같은 수학적 검증을 병행할 수 있습니다.
-    1. **실루엣 점수 (Silhouette Score)**: 각 데이터 포인트가 같은 군집 내의 데이터와 얼마나 가깝고, 다른 군집의 데이터와 얼마나 먼지를 계산하여 -1에서 1 사이의 값으로 평가합니다. 실루엣 점수가 가장 높은 k를 최적해로 봅니다.
-    2. **엘보우 기법 (Elbow Method)**: k를 늘려가며 군집 내 오차 제곱합(WCSS; Within-Cluster Sum of Square)을 계산합니다. 그래프를 그렸을 때 오차가 급격히 줄어들다가 완만해지는 '팔꿈치(Elbow)' 지점을 최적의 k로 간주합니다.
-    3. **칼린스키-하라바츠 지수 (Calinski-Harabasz Index)**: 군집 간 분산과 군집 내 분산의 비율을 계산합니다. 이 비율(Variance Ratio)이 가장 높은 지점이 군집화가 가장 잘 된 k값입니다.
+    그러나 엄밀한 수학적/통계적 관점에서 최적의 군집 수(k)를 평가하기 위해 패키지 내부에 **실루엣 점수(Silhouette Score)** 및 **Calinski-Harabasz, Davies-Bouldin** 지표 계산 기능이 내장되어 있습니다. CLI에서 `--calculate-silhouette`나 `--calculate-extended-metrics` 옵션을 사용하거나 파이썬 API에서 설정하면 외부 라이브러리(Scikit-Learn 등) 없이도 군집 품질을 확인할 수 있습니다. 데이터가 클 경우 Valkey를 통한 분산 처리(`--use-distributed-evaluation`)도 지원합니다.
+    - **실루엣 점수**: 각 데이터 포인트가 같은 군집 내의 데이터와 얼마나 가깝고, 다른 군집의 데이터와 얼마나 먼지를 계산하여 -1에서 1 사이의 값으로 평가합니다. 1에 가까울수록 군집화가 잘 되었다고 판단할 수 있습니다.

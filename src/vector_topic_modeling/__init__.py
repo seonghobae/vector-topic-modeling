@@ -1,5 +1,9 @@
 """Standalone vector-based topic modeling package."""
 
+from vector_topic_modeling.evaluation import (
+    SilhouetteResult,
+    calculate_silhouette_score,
+)
 from vector_topic_modeling.pipeline import (
     Topic,
     TopicAssignment,
@@ -20,6 +24,8 @@ from vector_topic_modeling.providers.openai_compat import (
 )
 
 __all__ = [
+    "SilhouetteResult",
+    "calculate_silhouette_score",
     "OpenAICompatConfig",
     "OpenAICompatEmbeddingProvider",
     "TopicDocumentIngestionConfig",
