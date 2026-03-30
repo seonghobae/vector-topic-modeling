@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     concurrency:
-      group: scorecard-analysis-${{ github.ref }}
+      group: scorecard-analysis-${{ github.event_name }}-${{ github.ref }}
       cancel-in-progress: true
     permissions:
       security-events: write
