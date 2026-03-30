@@ -266,6 +266,7 @@ def test_scorecard_workflow_uses_event_scoped_concurrency_and_docs_match() -> No
     assert "name: OSSF Scorecard" in workflow
     assert "branch_protection_rule:" in workflow
     assert "push:" in workflow
+    assert re.search(r"push:\s*\n\s*branches:\s*\n\s*-\s*main\b", workflow) is not None
     assert "schedule:" in workflow
     assert (
         "group: scorecard-analysis-${{ github.event_name }}-${{ github.ref }}"
