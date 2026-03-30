@@ -115,9 +115,14 @@ def test_trivy_workflow_forces_node24_runtime_and_docs_are_aligned() -> None:
     workflow = _read(".github/workflows/trivy.yml")
     workflow_data = yaml.safe_load(workflow)
 
-    node_runtime_value = workflow_data["jobs"]["trivy-fs-scan"]["env"][
-        "FORCE_JAVASCRIPT_ACTIONS_TO_NODE24"
-    ]
+    jobs = workflow_data.get("jobs", {})
+    trivy_job = jobs.get("trivy-fs-scan", {})
+    env = trivy_job.get("env", {})
+    node_runtime_value = env.get("FORCE_JAVASCRIPT_ACTIONS_TO_NODE24")
+    assert node_runtime_value is not None, (
+        "trivy.yml must define "
+        "jobs.trivy-fs-scan.env.FORCE_JAVASCRIPT_ACTIONS_TO_NODE24"
+    )
 
     assert str(node_runtime_value).lower() == "true"
 
