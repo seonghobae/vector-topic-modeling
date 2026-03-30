@@ -255,6 +255,26 @@ def test_dependency_review_scope_docs_match_main_target_trigger() -> None:
         assert "each PR" not in content, relpath
 
 
+def test_scorecard_workflow_uses_event_scoped_concurrency_and_docs_match() -> None:
+    workflow = _read(".github/workflows/scorecard.yml")
+
+    assert "name: OSSF Scorecard" in workflow
+    assert "branch_protection_rule:" in workflow
+    assert "push:" in workflow
+    assert "schedule:" in workflow
+    assert (
+        "group: scorecard-analysis-${{ github.event_name }}-${{ github.ref }}"
+        in workflow
+    )
+    assert "cancel-in-progress: true" in workflow
+
+    for relpath in ["ARCHITECTURE.md", "docs/engineering/harness-engineering.md"]:
+        content = _read(relpath)
+        assert "scorecard.yml" in content, relpath
+        assert "event-scoped concurrency" in content, relpath
+        assert "github.event_name" in content, relpath
+
+
 def test_release_docs_include_docstring_coverage_release_and_publish_gate() -> None:
     release_workflow = _read(".github/workflows/release.yml")
     publish_workflow = _read(".github/workflows/publish.yml")

@@ -1,6 +1,6 @@
 # Architecture Overview
 
-Last updated: 2026-03-29
+Last updated: 2026-03-30
 
 ## Project structure
 
@@ -73,6 +73,11 @@ database storage, background jobs, XLSX export, and email delivery.
   GitHub Security.
 - `codeql.yml` performs CodeQL static analysis for Python on every push
   and PR (plus a weekly schedule) and uploads findings to GitHub Security.
+- `scorecard.yml` runs OSSF Scorecard on `main` pushes,
+  `branch_protection_rule`, and a weekly schedule; it uses event-scoped concurrency
+  via `github.event_name` in
+  `scorecard-analysis-${{ github.event_name }}-${{ github.ref }}` so
+  push/branch-protection runs on the same ref do not cancel each other.
 - `cflite_pr.yml` runs ClusterFuzzLite `code-change` fuzzing for PRs to
   `main`, filtered to code-relevant paths (`src/**`, `tests/**`,
   `.clusterfuzzlite/**`, and the workflow file) to avoid docs-only PR churn.

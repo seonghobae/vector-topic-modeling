@@ -21,6 +21,10 @@
   for pull requests.
 - `.github/workflows/ci-stability.yml` is the compatibility verification path
   for Python 3.13 and 3.14 (PR-to-main, push-to-main, weekly schedule).
+- `.github/workflows/scorecard.yml` runs OSSF Scorecard on `main` pushes,
+  `branch_protection_rule`, and a weekly schedule, and uses event-scoped concurrency
+  (`github.event_name`) so push and branch-protection runs for the
+  same ref do not cancel each other.
 - `.github/workflows/cflite_pr.yml` is the PR-scoped ClusterFuzzLite path
   (`mode: code-change`) and is intentionally limited to code-relevant paths
   (`src/**`, `tests/**`, `.clusterfuzzlite/**`, workflow file) to avoid
