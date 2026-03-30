@@ -128,6 +128,8 @@ def test_trivy_workflow_forces_node24_runtime_and_docs_are_aligned() -> None:
     security_doc = _read("docs/security/api-security-checklist.md")
     assert "`trivy.yml` sets" in security_doc
     assert "FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true" in security_doc
+    assert "2026-06-02" in security_doc
+    assert "2026-09-16" in security_doc
 
 
 def test_ci_runs_docstring_coverage_step_once_for_python_311() -> None:
